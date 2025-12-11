@@ -3,14 +3,14 @@ using System.Collections;
 
 public class PlayerController : MonoBehaviour
 {
-    // BİLEŞENLER
+    // BÃLEÃENLER
     public CharacterController controller;
     public Transform cameraTransform;
     public Animator animator;
     public TrailRenderer swordTrail;
 
-    [Header("Silah Ayarları")]
-    public Collider swordCollider; // YENİ: Kılıcın collider'ını buraya bağlayacağız
+    [Header("Silah AyarlarÃ½")]
+    public Collider swordCollider; // YENÃ: KÃ½lÃ½cÃ½n collider'Ã½nÃ½ buraya baÃ°layacaÃ°Ã½z
 
     // HIZ AYARLARI
     public float walkSpeed = 2f;
@@ -19,13 +19,13 @@ public class PlayerController : MonoBehaviour
     public float turnSmoothTime = 0.1f;
     float turnSmoothVelocity;
 
-    // YERÇEKİMİ
+    // YERÃ‡EKÃMÃ
     Vector3 velocity;
     public float gravity = -9.81f;
 
-    // DURUM KONTROLÜ
+    // DURUM KONTROLÃœ
     bool isRolling = false;
-    bool isAttacking = false; // Saldırı kilidi
+    bool isAttacking = false; // SaldÃ½rÃ½ kilidi
 
     void Start()
     {
@@ -35,13 +35,13 @@ public class PlayerController : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked;
         if (swordTrail != null) swordTrail.emitting = false;
 
-        // Oyun başlarken kılıç kesmesin, kapalı olsun
+        // Oyun baÃ¾larken kÃ½lÃ½Ã§ kesmesin, kapalÃ½ olsun
         if (swordCollider != null) swordCollider.enabled = false;
     }
 
     void Update()
     {
-        // 1. YERÇEKİMİ (Her zaman çalışmalı)
+        // 1. YERÃ‡EKÃMÃ (Her zaman Ã§alÃ½Ã¾malÃ½)
         if (controller.isGrounded && velocity.y < 0)
         {
             velocity.y = -2f;
@@ -49,17 +49,17 @@ public class PlayerController : MonoBehaviour
         velocity.y += gravity * Time.deltaTime;
         controller.Move(velocity * Time.deltaTime);
 
-        // KİLİT NOKTA: Yuvarlanıyorsak VEYA Saldırıyorsak hareket kodlarını çalıştırma
+        // KÃLÃT NOKTA: YuvarlanÃ½yorsak VEYA SaldÃ½rÃ½yorsak hareket kodlarÃ½nÃ½ Ã§alÃ½Ã¾tÃ½rma
         if (isRolling || isAttacking) return;
 
-        // 2. GİRDİLERİ AL
+        // 2. GÃRDÃLERÃ AL
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
         Vector3 direction = new Vector3(horizontal, 0f, vertical).normalized;
 
         bool isRunning = Input.GetKey(KeyCode.LeftShift);
 
-        // 3. HAREKET MANTIĞI
+        // 3. HAREKET MANTIÃI
         if (direction.magnitude >= 0.1f)
         {
             float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + cameraTransform.eulerAngles.y;
@@ -77,7 +77,7 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        // 4. ANİMASYON
+        // 4. ANÃMASYON
         float targetAnimSpeed = 0f;
         if (direction.magnitude >= 0.1f) targetAnimSpeed = isRunning ? 1f : 0.5f;
 
@@ -109,35 +109,35 @@ public class PlayerController : MonoBehaviour
         isRolling = false;
     }
 
-    // --- SALDIRI BAŞLATMA ---
+    // --- SALDIRI BAÃLATMA ---
     void StartAttack()
     {
         isAttacking = true; // Hareketi kilitle
-        animator.SetFloat("Speed", 0f); // Koşma animasyonunu kes
+        animator.SetFloat("Speed", 0f); // KoÃ¾ma animasyonunu kes
         animator.SetTrigger("Attack");
 
-        // YENİ: Saldırı başladı, kılıcı AKTİF ET (Kessin)
+        // YENÃ: SaldÃ½rÃ½ baÃ¾ladÃ½, kÃ½lÃ½cÃ½ AKTÃF ET (Kessin)
         if (swordCollider != null) swordCollider.enabled = true;
 
-        // Emniyet sübabı
+        // Emniyet sÃ¼babÃ½
         Invoke("ForceStopAttack", 1.2f);
     }
 
-    // --- HATAYI ÇÖZEN VE KİLİDİ AÇAN FONKSİYON ---
+    // --- HATAYI Ã‡Ã–ZEN VE KÃLÃDÃ AÃ‡AN FONKSÃYON ---
     public void AttackBitti()
     {
-        isAttacking = false; // Kilidi aç, hareket edebilirsin
+        isAttacking = false; // Kilidi aÃ§, hareket edebilirsin
         CancelInvoke("ForceStopAttack");
 
-        // YENİ: Saldırı bitti, kılıcı KAPAT (Artık kesmesin)
+        // YENÃ: SaldÃ½rÃ½ bitti, kÃ½lÃ½cÃ½ KAPAT (ArtÃ½k kesmesin)
         if (swordCollider != null) swordCollider.enabled = false;
     }
 
-    // Emniyet Sübabı Fonksiyonu
+    // Emniyet SÃ¼babÃ½ Fonksiyonu
     void ForceStopAttack()
     {
         isAttacking = false;
-        // YENİ: Süre dolduysa kılıcı kapat
+        // YENÃ: SÃ¼re dolduysa kÃ½lÃ½cÃ½ kapat
         if (swordCollider != null) swordCollider.enabled = false;
     }
 

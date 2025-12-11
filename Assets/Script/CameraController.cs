@@ -2,39 +2,39 @@ using UnityEngine;
 
 public class CameraController : MonoBehaviour
 {
-    public Transform target; // Takip edilecek karakteri buraya sürükleyeceðiz
+    public Transform target; // Takip edilecek karakteri buraya sÃ¼rÃ¼kleyeceÄŸiz
 
     public float mouseSensitivity = 2f;   // Mouse hassasiyeti
-    public float distanceFromTarget = 4f; // Karakterden uzaklýk
-    public Vector2 pitchMinMax = new Vector2(-40, 85); // Aþaðý/Yukarý bakma sýnýrý
+    public float distanceFromTarget = 4f; // Karakterden uzaklÄ±k
+    public Vector2 pitchMinMax = new Vector2(-40, 85); // AÅŸaÄŸÄ±/YukarÄ± bakma sÄ±nÄ±rÄ±
 
-    public float rotationSmoothTime = 0.12f; // Dönüþ yumuþatma süresi
+    public float rotationSmoothTime = 0.12f; // DÃ¶nÃ¼ÅŸ yumuÅŸatma sÃ¼resi
     Vector3 rotationSmoothVelocity;
     Vector3 currentRotation;
 
-    float yaw;   // Yatay eksen (Sað-Sol)
-    float pitch; // Dikey eksen (Yukarý-Aþaðý)
+    float yaw;   // Yatay eksen (SaÄŸ-Sol)
+    float pitch; // Dikey eksen (YukarÄ±-AÅŸaÄŸÄ±)
 
     void LateUpdate()
     {
         if (target == null) return;
 
-        // 1. FARE GÝRDÝSÝNÝ AL
+        // 1. FARE GÄ°RDÄ°SÄ°NÄ° AL
         yaw += Input.GetAxis("Mouse X") * mouseSensitivity;
         pitch -= Input.GetAxis("Mouse Y") * mouseSensitivity;
 
-        // 2. AÞAÐI/YUKARI BAKMAYI SINIRLA (Takla atmamasý için)
+        // 2. AÅžAÄžI/YUKARI BAKMAYI SINIRLA (Takla atmamasÄ± iÃ§in)
         pitch = Mathf.Clamp(pitch, pitchMinMax.x, pitchMinMax.y);
 
-        // 3. YUMUÞAK DÖNÜÞ (Smooth Damp)
+        // 3. YUMUÅžAK DÃ–NÃœÅž (Smooth Damp)
         Vector3 targetRotation = new Vector3(pitch, yaw);
         currentRotation = Vector3.SmoothDamp(currentRotation, targetRotation, ref rotationSmoothVelocity, rotationSmoothTime);
 
-        // 4. KAMERAYI DÖNDÜR
+        // 4. KAMERAYI DÃ–NDÃœR
         transform.eulerAngles = currentRotation;
 
-        // 5. KAMERAYI KARAKTERÝN ARKASINA KOY
-        // (Vector3.up * 1.5f ekleyerek ayaklarýna deðil omuz hizasýna bakmasýný saðlýyoruz)
+        // 5. KAMERAYI KARAKTERÄ°N ARKASINA KOY
+        // (Vector3.up * 1.5f ekleyerek ayaklarÄ±na deÄŸil omuz hizasÄ±na bakmasÄ±nÄ± saÄŸlÄ±yoruz)
         transform.position = target.position - transform.forward * distanceFromTarget + Vector3.up * 1.5f;
     }
 }
