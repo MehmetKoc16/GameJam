@@ -225,6 +225,7 @@ MonoBehaviour:
   rollSpeed: 8
   turnSmoothTime: 0.1
   gravity: -9.81
+  jumpHeight: 0.3
 --- !u!95 &201364334 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 45b20ed5984dab54899b71c58062e7d4, type: 3}
@@ -1195,7 +1196,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
-  m_AdditionalShaderChannelsFlag: 0
+  m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
   m_SortingOrder: 0
@@ -1731,7 +1732,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98875d104658a404b8f45e8316947a22, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  saldiriTusu: 32
+  saldiriTusu: 9
   hasarMiktari: 10
   menzil: 10
   hedefKatmani:
