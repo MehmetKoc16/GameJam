@@ -3,19 +3,19 @@ using UnityEngine.UI;
 
 public class PlayerHealth : MonoBehaviour
 {
-    [Header("Can Ayarları")]
+    [Header("Can AyarlarÃ½")]
     public float maxHealth = 100f;
     public float currentHealth;
 
-    [Header("UI Bağlantısı")]
+    [Header("UI BaÃ°lantÃ½sÃ½")]
     public Image healthBarFill;
 
-    // HitReactor scriptine referans (Animasyonları bu yönetecek)
+    // HitReactor scriptine referans (AnimasyonlarÃ½ bu yÃ¶netecek)
     private HitReactor _hitReactor;
 
     void Start()
     {
-        // Aynı obje üzerindeki HitReactor scriptini bul
+        // AynÃ½ obje Ã¼zerindeki HitReactor scriptini bul
         _hitReactor = GetComponent<HitReactor>();
 
         currentHealth = maxHealth;
@@ -24,31 +24,31 @@ public class PlayerHealth : MonoBehaviour
 
     void Update()
     {
-        // TEST: "H" tuşuna basınca kendine zarar ver
+        // TEST: "H" tuÃ¾una basÃ½nca kendine zarar ver
         if (Input.GetKeyDown(KeyCode.H))
         {
-            // Test ederken "nereden vurdu?" sorusuna cevap vermemiz lazım.
-            // Simülasyon: Tam karşımızda (transform.forward) duran biri vurmuş gibi yapalım.
-            // Böylece karakterin "Önden Darbe Alma" (Hit Back) animasyonuna girmesi gerekir.
+            // Test ederken "nereden vurdu?" sorusuna cevap vermemiz lazÃ½m.
+            // SimÃ¼lasyon: Tam karÃ¾Ã½mÃ½zda (transform.forward) duran biri vurmuÃ¾ gibi yapalÃ½m.
+            // BÃ¶ylece karakterin "Ã–nden Darbe Alma" (Hit Back) animasyonuna girmesi gerekir.
             Vector3 fakeAttackerPos = transform.position + transform.forward;
 
             TakeDamage(10, fakeAttackerPos);
         }
     }
 
-    // Hasar Alma Fonksiyonu GÜNCELLENDİ: Artık saldıranın pozisyonunu da istiyor
+    // Hasar Alma Fonksiyonu GÃœNCELLENDÃ: ArtÃ½k saldÃ½ranÃ½n pozisyonunu da istiyor
     public void TakeDamage(float damageAmount, Vector3 attackerPos)
     {
         currentHealth -= damageAmount;
 
-        // Can 0'ın altına düşmesin
+        // Can 0'Ã½n altÃ½na dÃ¼Ã¾mesin
         if (currentHealth < 0) currentHealth = 0;
 
-        // UI'ı güncelle
+        // UI'Ã½ gÃ¼ncelle
         UpdateHealthUI();
 
-        // --- YENİ EKLENEN KISIM ---
-        // Eğer ölmediysek ve HitReactor scripti varsa tepki ver
+        // --- YENÃ EKLENEN KISIM ---
+        // EÃ°er Ã¶lmediysek ve HitReactor scripti varsa tepki ver
         if (currentHealth > 0 && _hitReactor != null)
         {
             _hitReactor.HandleHitReaction(attackerPos);
@@ -78,8 +78,8 @@ public class PlayerHealth : MonoBehaviour
 
     void Die()
     {
-        Debug.Log("ÖLDÜNÜZ!");
-        // Buraya ragdoll açma veya ölüm animasyonu gelecek
+        Debug.Log("Ã–LDÃœNÃœZ!");
+        // Buraya ragdoll aÃ§ma veya Ã¶lÃ¼m animasyonu gelecek
         // GetComponent<Animator>().SetTrigger("Die"); gibi.
     }
 }

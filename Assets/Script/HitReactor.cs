@@ -1,6 +1,6 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
-[RequireComponent(typeof(Animator))] // Bu scriptin olduğu yerde Animator olmak zorunda
+[RequireComponent(typeof(Animator))] // Bu scriptin olduÃ°u yerde Animator olmak zorunda
 public class HitReactor : MonoBehaviour
 {
     private Animator _animator;
@@ -10,26 +10,26 @@ public class HitReactor : MonoBehaviour
         _animator = GetComponent<Animator>();
     }
 
-    // Bu fonksiyon dışarıdan (Can scriptinden veya Düşman silahından) çağrılacak
+    // Bu fonksiyon dÃ½Ã¾arÃ½dan (Can scriptinden veya DÃ¼Ã¾man silahÃ½ndan) Ã§aÃ°rÃ½lacak
     public void HandleHitReaction(Vector3 attackerPosition)
     {
-        // 1. Düşmanın (veya hasar kaynağının) yönünü hesapla
+        // 1. DÃ¼Ã¾manÃ½n (veya hasar kaynaÃ°Ã½nÃ½n) yÃ¶nÃ¼nÃ¼ hesapla
         Vector3 directionToAttacker = attackerPosition - transform.position;
-        directionToAttacker.y = 0; // Yükseklik farkını önemseme
+        directionToAttacker.y = 0; // YÃ¼kseklik farkÃ½nÃ½ Ã¶nemseme
 
-        // 2. Yönü karakterin local (yerel) koordinatlarına çevir
-        // Bu sayede "Sağ", karakterin sağı olur; dünyanın sağı değil.
+        // 2. YÃ¶nÃ¼ karakterin local (yerel) koordinatlarÃ½na Ã§evir
+        // Bu sayede "SaÃ°", karakterin saÃ°Ã½ olur; dÃ¼nyanÃ½n saÃ°Ã½ deÃ°il.
         Vector3 localDir = transform.InverseTransformDirection(directionToAttacker);
         localDir.Normalize();
 
-        // 3. Animator parametrelerini güncelle
+        // 3. Animator parametrelerini gÃ¼ncelle
         _animator.SetFloat("HitX", localDir.x);
         _animator.SetFloat("HitZ", localDir.z);
 
-        // 4. Trigger'ı çek ve animasyonu başlat
+        // 4. Trigger'Ã½ Ã§ek ve animasyonu baÃ¾lat
         _animator.SetTrigger("GetHit");
 
-        // Debug için konsola yönü yazdıralım (Test ettikten sonra silebilirsin)
-        Debug.Log($"Darbe Yönü: {localDir} | X: {localDir.x}, Z: {localDir.z}");
+        // Debug iÃ§in konsola yÃ¶nÃ¼ yazdÃ½ralÃ½m (Test ettikten sonra silebilirsin)
+        Debug.Log($"Darbe YÃ¶nÃ¼: {localDir} | X: {localDir.x}, Z: {localDir.z}");
     }
 }

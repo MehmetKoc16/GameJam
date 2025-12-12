@@ -2,16 +2,16 @@ using UnityEngine;
 
 public class SwordDamage : MonoBehaviour
 {
-    // Kılıç bir şeyin içinden geçtiğinde bu fonksiyon çalışır
+    // KÃ½lÃ½Ã§ bir Ã¾eyin iÃ§inden geÃ§tiÃ°inde bu fonksiyon Ã§alÃ½Ã¾Ã½r
     private void OnTriggerEnter(Collider other)
     {
-        // Çarptığımız şeyin etiketi "Enemy" mi?
+        // Ã‡arptÃ½Ã°Ã½mÃ½z Ã¾eyin etiketi "Enemy" mi?
         if (other.CompareTag("Enemy"))
         {
-            // Konsola mesaj yaz (Test için)
-            Debug.Log("Düşmana Vurdum: " + other.name);
+            // Konsola mesaj yaz (Test iÃ§in)
+            Debug.Log("DÃ¼Ã¾mana Vurdum: " + other.name);
 
-            // Şimdilik düşmanı direkt yok edelim
+            // Ãimdilik dÃ¼Ã¾manÃ½ direkt yok edelim
             Destroy(other.gameObject);
         }
     }
