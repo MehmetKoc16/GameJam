@@ -971,6 +971,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5173750804894084808, guid: 39a53a7c7e3670e4d9fa4f4cef1bb9ea, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5173750804894084808, guid: 39a53a7c7e3670e4d9fa4f4cef1bb9ea, type: 3}
       propertyPath: m_TagString
       value: BOSS_HITBOX
       objectReference: {fileID: 0}

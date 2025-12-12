@@ -222,6 +222,7 @@ public class BossAI : MonoBehaviour
         }
     }
     
+
     public void TakeDamage(int damageAmount)
     {
         if (isDead || currentState == BossState.Hurt) return; 
@@ -240,7 +241,7 @@ public class BossAI : MonoBehaviour
         if (animator != null)
         {
             // Hasar Alma Trigger'ı
-            animator.SetTrigger("TakeDamage"); 
+            animator.SetTrigger("TakeHit"); 
         }
     }
 
