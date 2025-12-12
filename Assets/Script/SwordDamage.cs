@@ -1,18 +1,61 @@
+
 using UnityEngine;
 
 public class SwordDamage : MonoBehaviour
 {
-    // K�l�� bir �eyin i�inden ge�ti�inde bu fonksiyon �al���r
+    public int swordDamageAmount = 100;
+    private Collider swordCollider; 
+
+    void Start()
+    {
+        swordCollider = GetComponent<Collider>();
+
+        if (swordCollider == null)
+        {
+            Debug.LogError("SwordDamage script'i, üzerinde Collider olmayan bir objeye eklendi!");
+            return;
+        }
+
+        // KRİTİK: Başlangıçta Collider'ı kapatın! Bu, yaklaştığınızda hasar almayı engeller.
+        swordCollider.enabled = false;
+    }
+
+    // Animasyon Event'i ile çağrılacak metot (Kılıç sallanmaya başladığında)
+    public void EnableHitbox()
+    {
+        if (swordCollider != null)
+        {
+            swordCollider.enabled = true;
+            Debug.Log("Kılıç Collider AÇIK");
+        }
+    }
+
+    // Animasyon Event'i ile çağrılacak metot (Kılıç sallama bittiğinde)
+    public void DisableHitbox()
+    {
+        if (swordCollider != null)
+        {
+            swordCollider.enabled = false;
+            Debug.Log("Kılıç Collider KAPALI");
+        }
+    }
+
+    // Hasar verme mantığı
     private void OnTriggerEnter(Collider other)
     {
-        // �arpt���m�z �eyin etiketi "Enemy" mi?
-        if (other.CompareTag("Enemy"))
+        // Sadece BOSS_HITBOX Tag'ine sahip ana gövdeye vurulduğunda devam et
+        if (other.gameObject.CompareTag("BOSS_HITBOX"))
         {
-            // Konsola mesaj yaz (Test i�in)
-            Debug.Log("D��mana Vurdum: " + other.name);
+            BossAI boss = other.GetComponent<BossAI>(); 
+            Debug.Log("Kılıç Boss'un ana gövdesine çarptı.");
 
-            // �imdilik d��man� direkt yok edelim
-            Destroy(other.gameObject);
+            if (boss != null)
+            {
+                Debug.Log($"Kılıç, Boss'un ana gövdesine temas etti. Hasar Verildi: {swordDamageAmount}");
+                boss.TakeDamage(swordDamageAmount); 
+                
+                // Kılıç bir mermi değil, kalıcı obje olduğu için yok etmiyoruz.
+            }
         }
     }
 }

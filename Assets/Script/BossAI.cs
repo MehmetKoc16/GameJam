@@ -1,8 +1,9 @@
 using UnityEngine;
 using UnityEngine.AI; 
+using System.Collections; 
 
 // Boss'un olası durumlarını tanımlıyoruz
-public enum BossState { Idle, Patrol, Chase, Attack }
+public enum BossState { Idle, Patrol, Chase, Attack, Hurt } 
 
 public class BossAI : MonoBehaviour
 {
@@ -18,36 +19,38 @@ public class BossAI : MonoBehaviour
     public BossState currentState = BossState.Idle;
     
     // --- Hız Ayarları ---
-    public float patrolSpeed = 2f; // Devriye (Yürüme) Hızı
-    public float chaseSpeed = 5f;  // Kovalama (Koşma) Hızı
+    public float patrolSpeed = 2f; 
+    public float chaseSpeed = 5f;  
     
     // Devriye (Patrol) Ayarları
-    public Transform[] patrolPoints; // Inspector'dan atayacağınız devriye noktaları
+    public Transform[] patrolPoints; 
     private int currentPatrolIndex = 0;
-    public float waitTimeAtPoint = 3f; // Devriye noktasında bekleme süresi
+    public float waitTimeAtPoint = 3f; 
     private float waitTimer;
     
     // Saldırı Ayarları
-    public float attackRange = 2.5f; // Saldırı menzili
+    public float attackRange = 2.5f; 
+
+    // --- Yeni Hasar Ayarı ---
+    public float hurtStunDuration = 0.5f; 
 
     void Start()
     {
-        // Bileşenleri Al
         agent = GetComponent<NavMeshAgent>();
         animator = GetComponent<Animator>();
 
         if (agent == null)
         {
-            Debug.LogError("NavMeshAgent bileşeni bulunamadı. Lütfen Boss objesine ekleyin.");
+            Debug.LogError("NavMeshAgent bileşeni bulunamadı.");
             return;
         }
         
-        // Canı başlat
         currentHealth = maxHealth;
         waitTimer = waitTimeAtPoint; 
         
-        // Başlangıç durumunu ayarla ve ilk hedefi belirle
-        if (patrolPoints.Length > 0)
+        agent.stoppingDistance = 0.15f; 
+        
+        if (patrolPoints != null && patrolPoints.Length > 0)
         {
             currentState = BossState.Patrol;
             agent.speed = patrolSpeed;
@@ -61,18 +64,14 @@ public class BossAI : MonoBehaviour
 
     void Update()
     {
-        if (isDead) return; // Boss öldüyse hiçbir şey yapma
-
-        // Agent aktif değilse (NavMesh'te değilse) veya yol hesaplamıyorsa, çık.
-        if (agent == null || !agent.isOnNavMesh) 
+        // Ölüm veya Hurt durumlarında AI mantığını çalıştırma
+        if (isDead || agent == null || !agent.isOnNavMesh || currentState == BossState.Hurt) 
         {
             return; 
         }
 
-        // Animasyon Hızını Yönet
         UpdateAnimations();
 
-        // Ana yapay zeka döngüsü
         switch (currentState)
         {
             case BossState.Idle:
@@ -92,9 +91,17 @@ public class BossAI : MonoBehaviour
     {
         if (animator != null)
         {
-            // NavMeshAgent'ın anlık hızını al ve Animator'a gönder
             float currentSpeed = agent.velocity.magnitude;
-            animator.SetFloat("Speed", currentSpeed); 
+            float normalizedSpeed = currentSpeed / chaseSpeed; 
+            
+            if (currentSpeed < 0.1f)
+            {
+                 animator.SetFloat("Speed", 0f);
+            }
+            else
+            {
+                 animator.SetFloat("Speed", normalizedSpeed); 
+            }
         }
     }
 
@@ -102,31 +109,28 @@ public class BossAI : MonoBehaviour
 
     void PatrolLogic()
     {
-        // Agent'ın hızını yürüme hızına ayarla
-        if (agent.speed != patrolSpeed && agent.speed != 0) 
-        {
-            agent.speed = patrolSpeed;
-        }
+        agent.speed = patrolSpeed; 
 
         if (patrolPoints.Length == 0) return;
 
-        // Hedefe ulaşıldı mı kontrol et
-        bool isPathValid = !agent.pathPending && agent.remainingDistance != Mathf.Infinity;
+        bool isAtDestination = !agent.pathPending && 
+                               agent.remainingDistance <= agent.stoppingDistance &&
+                               agent.velocity.sqrMagnitude < 0.01f; 
 
-        if (isPathValid && agent.remainingDistance <= agent.stoppingDistance)
+        if (isAtDestination)
         {
-            // Hedefe ulaşıldı, bekleme başlat
             waitTimer -= Time.deltaTime;
-            agent.speed = 0; // Boss'u durdur
 
             if (waitTimer <= 0)
             {
-                // Bir sonraki noktaya geç
                 currentPatrolIndex = (currentPatrolIndex + 1) % patrolPoints.Length;
                 agent.SetDestination(patrolPoints[currentPatrolIndex].position);
-                agent.speed = patrolSpeed;
-                waitTimer = waitTimeAtPoint; // Sayacı sıfırla
+                waitTimer = waitTimeAtPoint; 
             }
+        }
+        else if (agent.remainingDistance > agent.stoppingDistance)
+        {
+            agent.isStopped = false;
         }
     }
 
@@ -138,12 +142,10 @@ public class BossAI : MonoBehaviour
             return;
         }
         
-        // Hızı KOŞMA hızına ayarla
         agent.isStopped = false;
         agent.speed = chaseSpeed; 
         agent.SetDestination(playerTarget.position);
 
-        // Saldırı menzilini kontrol et
         if (agent.remainingDistance <= attackRange && !agent.pathPending)
         {
             currentState = BossState.Attack;
@@ -152,23 +154,20 @@ public class BossAI : MonoBehaviour
 
     void AttackLogic()
     {
-        agent.isStopped = true; // Boss'u saldırı sırasında durdur
+        agent.isStopped = true; 
         
-        // Oyuncuya doğru dön
         if (playerTarget != null)
         {
             Vector3 direction = (playerTarget.position - transform.position).normalized;
             Quaternion lookRotation = Quaternion.LookRotation(new Vector3(direction.x, 0, direction.z));
             transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * 5f);
             
-            // Saldırı Animasyonu Tetikle
             if(animator != null)
             {
-                animator.SetBool("IsAttacking", true);
+                animator.SetBool("IsAttacking", true); 
             }
         }
         
-        // Oyuncu saldırı menzilinden çıkarsa tekrar kovalamaya dön
         if (playerTarget != null && Vector3.Distance(transform.position, playerTarget.position) > attackRange * 1.2f)
         {
             if(animator != null) animator.SetBool("IsAttacking", false);
@@ -179,65 +178,97 @@ public class BossAI : MonoBehaviour
 
     // --- DIŞ FONKSİYONLAR ---
 
-    // BossAggroController tarafından çağrılır (KOŞMA başlatılır)
     public void StartCombat(Transform target)
     {
         if (currentState == BossState.Patrol || currentState == BossState.Idle)
         {
             playerTarget = target;
             currentState = BossState.Chase; 
-            agent.isStopped = false;
-            agent.speed = chaseSpeed; 
-            Debug.Log("Savaş Başladı! Boss, KOŞMA (Chase) durumuna geçti.");
+            
+            // NavMesh Agent'ın durumunu kontrol et
+            if (agent != null && agent.enabled && agent.isOnNavMesh)
+            {
+                agent.isStopped = false;
+                agent.speed = chaseSpeed; 
+            }
         }
     }
 
-    // BossAggroController tarafından çağrılır (YÜRÜME'ye geri döner)
     public void StopCombat()
     {
         if (currentState == BossState.Chase || currentState == BossState.Attack)
         {
             playerTarget = null;
             currentState = BossState.Patrol; 
-            agent.speed = patrolSpeed; 
-            agent.isStopped = false;
-            if(animator != null) animator.SetBool("IsAttacking", false);
-            Debug.Log("Oyuncu menzilden çıktı. YÜRÜME (Patrol) moduna geri dönülüyor.");
             
-            if (patrolPoints.Length > 0)
+            // HATA KORUMASI: NavMesh Agent'ın durumunu kontrol et
+            if (agent != null && agent.enabled && agent.isOnNavMesh)
             {
-                 agent.SetDestination(patrolPoints[currentPatrolIndex].position);
+                agent.speed = patrolSpeed; 
+                agent.isStopped = false; 
+                
+                if(animator != null) animator.SetBool("IsAttacking", false);
+                
+                if (patrolPoints.Length > 0)
+                {
+                    agent.SetDestination(patrolPoints[currentPatrolIndex].position);
+                }
+            }
+            else
+            {
+                // Agent devre dışıysa bile animasyonu sıfırla
+                 if(animator != null) animator.SetBool("IsAttacking", false);
             }
         }
     }
     
-    /// <summary>
-    /// Boss'un hasar almasını, animasyonu tetiklemesini ve ölümü kontrol eder.
-    /// </summary>
-    /// <param name="damageAmount">Alınan hasar miktarı.</param>
     public void TakeDamage(int damageAmount)
     {
-        if (isDead) return;
+        if (isDead || currentState == BossState.Hurt) return; 
 
-        // 1. Canı Azaltma
         currentHealth -= damageAmount;
-        
         Debug.Log($"Boss hasar aldı. Kalan Can: {currentHealth}");
 
-        // 2. Hasar Animasyonunu Tetikle
-        if (animator != null)
-        {
-            animator.SetTrigger("Hurt"); 
-        }
-        
-        // 3. Ölüm Kontrolü
         if (currentHealth <= 0)
         {
             Die();
+            return;
         }
-        else
+
+        StartCoroutine(HandleHurt());
+
+        if (animator != null)
         {
-            // İsteğe bağlı: Hasar alırken saldırı durumundan çıkarıp kısa süre duraklatma kodu buraya eklenebilir.
+            // Hasar Alma Trigger'ı
+            animator.SetTrigger("TakeDamage"); 
+        }
+    }
+
+    IEnumerator HandleHurt()
+    {
+        BossState previousState = currentState; 
+        currentState = BossState.Hurt; 
+
+        if (agent.enabled) 
+        {
+            agent.isStopped = true; 
+        }
+        
+        yield return new WaitForSeconds(hurtStunDuration);
+        
+        currentState = previousState;
+        
+        if (agent.enabled)
+        {
+            agent.isStopped = false;
+            if (currentState == BossState.Patrol && patrolPoints.Length > 0)
+            {
+                agent.SetDestination(patrolPoints[currentPatrolIndex].position);
+            }
+            else if (currentState == BossState.Chase && playerTarget != null)
+            {
+                agent.SetDestination(playerTarget.position);
+            }
         }
     }
 
@@ -248,20 +279,18 @@ public class BossAI : MonoBehaviour
     {
         isDead = true;
         
-        // Boss'un hareketini ve çarpışmasını durdur
         if (agent != null)
         {
+            // Hareket etmesini tamamen durdur
             agent.isStopped = true;
-            agent.enabled = false;
+            agent.enabled = false; 
         }
 
-        // Ölüm Animasyonunu Tetikle 
         if (animator != null)
         {
-            // Örneğin: animator.SetBool("IsDead", true); veya direkt ölüm durumuna geçiş
-            Debug.Log("Boss Öldü! Animasyon tetiklendi.");
+            // Ölüm Animasyonunu Tetikle
+            // Animator'da IsDead Bool parametresi olmalıdır.
+            animator.SetBool("IsDead", true); 
         }
-        
-        // Burada ganimet düşürme, oyun sonu ekranı tetikleme gibi kodlar yer alır.
     }
 }
