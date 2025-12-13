@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic; // Listeleri kullanmak için gerekli
 
 public class PlayerController : MonoBehaviour
 {
@@ -8,6 +9,13 @@ public class PlayerController : MonoBehaviour
     public Transform cameraTransform;
     public Animator animator;
     public TrailRenderer swordTrail;
+
+    [Header("Ses Ayarları (YENİ)")]
+    public AudioSource audioSource; // Karakterin üzerine eklediğin AudioSource
+    public List<AudioClip> adimSesleri; // Kesip hazırladığın adım seslerini buraya sürükle
+    public AudioClip ziplamaSesi;       // Zıplama "Hıhh!" sesi
+    public AudioClip yuvarlanmaSesi;    // Yuvarlanma efekti
+    public AudioClip saldiriSesi;       // Kılıç savurma sesi (Whoosh)
 
     [Header("Silah Ayarları")]
     public Collider swordCollider;
@@ -36,6 +44,10 @@ public class PlayerController : MonoBehaviour
         if (controller == null) controller = GetComponent<CharacterController>();
         if (animator == null) animator = GetComponent<Animator>();
 
+        // Eğer AudioSource atamayı unuttuysan otomatik ekleyelim
+        if (audioSource == null) audioSource = GetComponent<AudioSource>();
+        if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
+
         Cursor.lockState = CursorLockMode.Locked;
         if (swordTrail != null) swordTrail.emitting = false;
         if (swordCollider != null) swordCollider.enabled = false;
@@ -46,7 +58,7 @@ public class PlayerController : MonoBehaviour
         // 1. YER KONTROLÜ
         isGrounded = controller.isGrounded;
 
-        // Yerçekimi sıfırlama (Yerdeysek ve aşağı düşüyorsak hızı sabitle)
+        // Yerçekimi sıfırlama
         if (isGrounded && velocity.y < 0)
         {
             velocity.y = -2f;
@@ -59,16 +71,14 @@ public class PlayerController : MonoBehaviour
         bool isRunning = Input.GetKey(KeyCode.LeftShift);
 
         // --- ZIPLAMA KONTROLÜ ---
-        // Space tuşu ile zıplama (Hareket kodlarından önce kontrol ediyoruz)
         if (Input.GetKeyDown(KeyCode.Space) && isGrounded && !isRolling && !isAttacking)
         {
             Jump();
         }
 
-        // --- HAREKET VEKÖTÜRÜNÜ HESAPLA (Henüz hareket etme!) ---
+        // --- HAREKET VEKÖTÜRÜNÜ HESAPLA ---
         Vector3 moveDirection = Vector3.zero;
 
-        // Eğer yuvarlanmıyor ve saldırmıyorsak hareket hesapla
         if (!isRolling && !isAttacking && direction.magnitude >= 0.1f)
         {
             float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + cameraTransform.eulerAngles.y;
@@ -78,7 +88,6 @@ public class PlayerController : MonoBehaviour
             Vector3 moveDir = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
             float currentSpeed = isRunning ? runSpeed : walkSpeed;
 
-            // Yatay hareketi vektöre ekle
             moveDirection = moveDir.normalized * currentSpeed;
 
             // Yuvarlanma tetikleyicisi
@@ -106,32 +115,59 @@ public class PlayerController : MonoBehaviour
         if (Input.GetMouseButtonDown(0) && !isAttacking && !isRolling && isGrounded)
         {
             StartAttack();
-            moveDirection = Vector3.zero; // Saldırırken kaymayı önlemek için
+            moveDirection = Vector3.zero;
         }
 
-        // --- FİZİK UYGULAMA (TEK SEFERDE) ---
-
-        // Eğer yuvarlanıyorsak, hareketi Coroutine yönetiyor, burası sadece yerçekimini uygular
-        // Eğer saldırmıyorsak veya yuvarlanmıyorsak normal hareket uygula
+        // --- FİZİK UYGULAMA ---
         if (!isRolling)
         {
-            // Yerçekimini velocity.y'ye ekle
             velocity.y += gravity * Time.deltaTime;
-
-            // Yatay Hareket (moveDirection) + Dikey Hareket (velocity) birleştiriliyor
-            // moveDirection zaten hız ile çarpılmıştı, o yüzden sadece Time.deltaTime ile çarpıyoruz
             Vector3 finalMove = (moveDirection) + velocity;
-
-            // TEK VE NİHAİ MOVE ÇAĞRISI
             controller.Move(finalMove * Time.deltaTime);
+        }
+    }
+
+    // --- SES FONKSİYONLARI (Animation Event Burayı Çağıracak) ---
+    public void OynatAdimSesi()
+    {
+        // Eğer havadaysak veya liste boşsa ses çalma
+        if (!isGrounded || adimSesleri.Count == 0) return;
+
+        // Sesin tonunu rastgele değiştir (0.8 ile 1.1 arası) -> Doğallık katar
+        audioSource.pitch = Random.Range(0.85f, 1.1f);
+
+        // Listeden rastgele bir ses seç
+        int rastgeleIndex = Random.Range(0, adimSesleri.Count);
+
+        // Sesi bir kere oynat
+        audioSource.PlayOneShot(adimSesleri[rastgeleIndex], 0.6f); // 0.6f ses şiddeti
+    }
+
+    // YENİ EKLEDİĞİMİZ SALDIRI SESİ ÇAĞRI FONKSİYONU
+    public void OynatSaldiriSesiEvent()
+    {
+        // Bu fonksiyonu tam kılıcın hızlandığı yerde animasyondan çağıracağız.
+        if (saldiriSesi != null)
+        {
+            audioSource.pitch = Random.Range(0.9f, 1.1f); // Hafif varyasyon kat
+            audioSource.PlayOneShot(saldiriSesi, 1f);
+        }
+    }
+
+    void OynatSes(AudioClip klip, float siddet = 1f)
+    {
+        if (klip != null)
+        {
+            audioSource.pitch = 1f; // Diğer seslerde pitch normal kalsın
+            audioSource.PlayOneShot(klip, siddet);
         }
     }
 
     // --- JUMP ---
     void Jump()
     {
-        // Fizik formülü: v = sqrt(2 * g * h)
         velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+        OynatSes(ziplamaSesi, 0.8f); // Zıplama sesi çal
 
         if (animator != null)
         {
@@ -144,16 +180,13 @@ public class PlayerController : MonoBehaviour
     {
         isRolling = true;
         animator.SetTrigger("Roll");
+        OynatSes(yuvarlanmaSesi, 1f); // Yuvarlanma sesi çal
 
         float rollDuration = 0.8f;
         float timer = 0;
 
-        // Yuvarlanırken yerçekimi sıfırlanmasın diye mevcut Y hızını koruyabilir veya sıfırlayabilirsin.
-        // Basitlik için sadece ileri itiyoruz:
         while (timer < rollDuration)
         {
-            // Yuvarlanırken de yerçekimi olması için velocity.y'yi hesaba katmalıyız ama
-            // basit kalması için sadece ileri itiyoruz:
             controller.Move(rollDirection.normalized * rollSpeed * Time.deltaTime);
             timer += Time.deltaTime;
             yield return null;
@@ -167,6 +200,8 @@ public class PlayerController : MonoBehaviour
         isAttacking = true;
         animator.SetFloat("Speed", 0f);
         animator.SetTrigger("Attack");
+        // OynatSes(saldiriSesi, 1f); // <-- BURAYI YORUM SATIRI YAPTIM / KALDIRDIM. Sesi artık animasyon içinden Event ile çağıracağız.
+
         if (swordCollider != null) swordCollider.enabled = true;
         Invoke("ForceStopAttack", 1.2f);
     }
@@ -184,6 +219,8 @@ public class PlayerController : MonoBehaviour
         if (swordCollider != null) swordCollider.enabled = false;
     }
 
+    // BU FONKSİYONLARA EK OLARAK:
+    // Kılıç sesini de Event olarak `TrailAc()`'nin hemen yanına veya biraz sonrasına ekleyebilirsin.
     public void TrailAc() { if (swordTrail != null) swordTrail.emitting = true; }
     public void TrailKapat() { if (swordTrail != null) swordTrail.emitting = false; }
 
