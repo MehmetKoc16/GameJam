@@ -5,51 +5,50 @@ public class SwordDamage : MonoBehaviour
     private Collider swordCollider; 
     public int swordDamageAmount = 100;
 
+    [Header("Efekt Ayarları")]
     public GameObject hitEffectPrefab;
+    public float effectDuration = 2.0f; // Efekt kaç saniye sonra silinsin?
 
     void Start()
     {
         swordCollider = GetComponent<Collider>();
         if (swordCollider == null)
         {
-            Debug.LogError("SwordDamage: Collider bulunamadı! Lütfen kılıç objesine bir Collider ekleyin.");
+            Debug.LogError("SwordDamage: Collider bulunamadı!");
             return;
         }
         
-        // Başlangıçta Collider'ı kapat
         swordCollider.enabled = false; 
     }
 
-    // --- MERKEZİ KONTROL FONKSİYONLARI ---
-
-    // PlayerController tarafından kılıcı açmak için çağrılır
     public void EnableHitbox()
     {
-        if (swordCollider != null)
-        {
-            swordCollider.enabled = true;
-            // Debug.Log("Kılıç Hitbox AÇIK"); // Test için
-        }
+        if (swordCollider != null) swordCollider.enabled = true;
     }
 
-    // PlayerController tarafından kılıcı kapatmak için çağrılır
     public void DisableHitbox()
     {
-        if (swordCollider != null)
-        {
-            swordCollider.enabled = false;
-            // Debug.Log("Kılıç Hitbox KAPALI"); // Test için
-        }
+        if (swordCollider != null) swordCollider.enabled = false;
     }
 
-    // Hasar verme mantığı
     private void OnTriggerEnter(Collider other)
     {
-        // SADECE BOSS_HITBOX TAG'ine sahip objeye hasar ver
         if (other.CompareTag("BOSS_HITBOX"))
         {
-            Instantiate(hitEffectPrefab, other.ClosestPoint(transform.position), Quaternion.identity);
-            BossAI boss = other.GetComponent<BossAI>(); 
+            // --- EFEKT KISMI (GÜNCELLENDİ) ---
+            if (hitEffectPrefab != null)
+            {
+                // 1. Efekti oluştur ve "vfx" adında bir kutuya koy
+                GameObject vfx = Instantiate(hitEffectPrefab, other.ClosestPoint(transform.position), Quaternion.identity);
+                
+                // 2. Bu "vfx" objesini, belirlediğimiz süre (effectDuration) dolunca yok et
+                Destroy(vfx, effectDuration);
+            }
+
+            // --- BOSS HASAR KISMI (DÜZELTİLMİŞ HALİ) ---
+            // Hatırlatma: BossAI scripti genelde ana objede olur, o yüzden GetComponentInParent kullanıyoruz.
+            BossAI boss = other.GetComponentInParent<BossAI>(); 
+            
             if (boss != null)
             {
                 boss.TakeDamage(swordDamageAmount); 

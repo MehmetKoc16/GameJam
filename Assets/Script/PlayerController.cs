@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class PlayerController : MonoBehaviour
 {
@@ -9,8 +10,15 @@ public class PlayerController : MonoBehaviour
     public Animator animator;
     public TrailRenderer swordTrail;
 
+    [Header("Ses Ayarları")]
+    public AudioSource audioSource;
+    public List<AudioClip> adimSesleri;
+    public AudioClip ziplamaSesi;
+    public AudioClip yuvarlanmaSesi;
+    public AudioClip saldiriSesi;
+
     [Header("Silah Kontrolü")]
-    // Buraya kılıç objesinin üzerindeki SwordDamage script'i bağlanacak
+    // Kılıç objesi üzerindeki SwordDamage script'ine referans
     public SwordDamage swordDamageControl; 
 
     // HIZ AYARLARI
@@ -20,54 +28,61 @@ public class PlayerController : MonoBehaviour
     public float turnSmoothTime = 0.1f;
     float turnSmoothVelocity;
 
-    // YERÇEKİMİ
+    // YERÇEKİMİ VE ZIPLAMA
     Vector3 velocity;
     public float gravity = -9.81f;
+    public float jumpHeight = 3f;
+    bool isGrounded;
 
     // DURUM KONTROLÜ
     bool isRolling = false;
-    bool isAttacking = false; 
+    bool isAttacking = false;
+    
+    // Emniyet Sübabı Süresi
+    private const float ATTACK_DURATION_SAFETY = 1.2f;
+
 
     void Start()
     {
         if (controller == null) controller = GetComponent<CharacterController>();
         if (animator == null) animator = GetComponent<Animator>();
 
+        if (audioSource == null) audioSource = GetComponent<AudioSource>();
+        if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
+        
         Cursor.lockState = CursorLockMode.Locked;
         if (swordTrail != null) swordTrail.emitting = false;
         
-        // Kılıç kontrolü artık SwordDamage script'i tarafından yapılıyor.
-        // Bu Start'ta sadece bağlantının kontrolü yeterli.
-        if (swordDamageControl == null)
+        if (swordDamageControl != null)
         {
-            Debug.LogError("PlayerController: Sword Damage Control referansı eksik!");
+             swordDamageControl.DisableHitbox();
         }
     }
 
     void Update()
     {
-        // HATA KORUMASI: CharacterController etkin değilse hareket etme
         if (controller == null || !controller.enabled) return;
 
-        // 1. YERÇEKİMİ 
-        if (controller.isGrounded && velocity.y < 0)
-        {
-            velocity.y = -2f;
-        }
-        velocity.y += gravity * Time.deltaTime;
-        controller.Move(velocity * Time.deltaTime);
+        // Yer Kontrolü ve Yerçekimi
+        isGrounded = controller.isGrounded;
+        if (isGrounded && velocity.y < 0) velocity.y = -2f;
 
-        // KİLİT NOKTA: Yuvarlanıyorsak VEYA Saldırıyorsak hareket kodlarını çalıştırma
-        if (isRolling || isAttacking) return;
-
-        // 2. GİRDİLERİ AL (Horizontal, Vertical, vb...)
+        // Girdileri Al
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
         Vector3 direction = new Vector3(horizontal, 0f, vertical).normalized;
         bool isRunning = Input.GetKey(KeyCode.LeftShift);
+        
+        // Zıplama
+        if (Input.GetKeyDown(KeyCode.Space) && isGrounded && !isRolling && !isAttacking)
+        {
+            Jump();
+        }
 
-        // 3. HAREKET MANTIĞI (Yönlendirme ve Move çağrıları)
-        if (direction.magnitude >= 0.1f)
+        Vector3 moveDirection = Vector3.zero;
+
+        // Hareket ve Dönüş
+        if (!isRolling && !isAttacking && direction.magnitude >= 0.1f)
         {
             float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + cameraTransform.eulerAngles.y;
             float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, turnSmoothTime);
@@ -76,69 +91,73 @@ public class PlayerController : MonoBehaviour
             Vector3 moveDir = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
             float currentSpeed = isRunning ? runSpeed : walkSpeed;
 
-            controller.Move(moveDir.normalized * currentSpeed * Time.deltaTime); 
+            moveDirection = moveDir.normalized * currentSpeed;
 
+            // Yuvarlanma
             if (Input.GetKeyDown(KeyCode.LeftControl))
             {
                 StartCoroutine(RollRoutine(moveDir));
             }
         }
 
-        // 4. ANİMASYON (SpeedSetFloat ayarları)
-        float targetAnimSpeed = 0f;
-        if (direction.magnitude >= 0.1f) targetAnimSpeed = isRunning ? 1f : 0.5f;
+        // Animasyon Hızı
+        if (!isRolling && !isAttacking)
+        {
+            float targetAnimSpeed = (direction.magnitude >= 0.1f) ? (isRunning ? 1f : 0.5f) : 0f;
+            float smoothedSpeed = Mathf.Lerp(animator.GetFloat("Speed"), targetAnimSpeed, Time.deltaTime * 10f);
+            animator.SetFloat("Speed", smoothedSpeed);
+        }
 
-        float currentAnimSpeed = animator.GetFloat("Speed");
-        float smoothedSpeed = Mathf.Lerp(currentAnimSpeed, targetAnimSpeed, Time.deltaTime * 10f);
-        animator.SetFloat("Speed", smoothedSpeed);
+        if (animator != null && HasParameter("IsGrounded"))
+        {
+            animator.SetBool("IsGrounded", isGrounded);
+        }
 
-        // 5. SALDIRI
-        if (Input.GetMouseButtonDown(0) && !isAttacking)
+        // Saldırı
+        if (Input.GetMouseButtonDown(0) && !isAttacking && !isRolling && isGrounded)
         {
             StartAttack();
+            moveDirection = Vector3.zero;
         }
-    }
 
-    // --- YUVARLANMA ---
-    IEnumerator RollRoutine(Vector3 rollDirection)
-    {
-        // ... (Roll mantığı aynı kalır) ...
-        isRolling = true;
-        animator.SetTrigger("Roll");
-
-        float rollDuration = 0.8f;
-        float timer = 0;
-        while (timer < rollDuration)
+        // Fizik Uygulama
+        if (!isRolling)
         {
-             if (controller.enabled) 
-             {
-                controller.Move(rollDirection.normalized * rollSpeed * Time.deltaTime);
-             }
-            timer += Time.deltaTime;
-            yield return null;
+            velocity.y += gravity * Time.deltaTime;
+            Vector3 finalMove = (moveDirection) + velocity;
+            controller.Move(finalMove * Time.deltaTime);
         }
-        isRolling = false;
     }
 
-    // --- SALDIRI BAŞLATMA ---
-    void StartAttack()
+    // --- Ses Yardımcı Metot ---
+    void OynatSes(AudioClip klip, float siddet = 1f, float pitchMin = 1f, float pitchMax = 1f)
     {
-        isAttacking = true; // Hareketi kilitle
-        animator.SetFloat("Speed", 0f); // Koşma animasyonunu kes
-        animator.SetTrigger("Attack");
+        if (klip != null && audioSource != null)
+        {
+            audioSource.pitch = Random.Range(pitchMin, pitchMax);
+            audioSource.PlayOneShot(klip, siddet);
+        }
+    }
+    
+    // --- ANIMATION EVENTS ---
 
-        // Emniyet sübabı (Animasyon Event'i kaçarsa kilidi açar)
-        Invoke("ForceStopAttack", 1.2f);
+    public void OynatAdimSesi()
+    {
+        if (!isGrounded || adimSesleri.Count == 0) return;
+        int rastgeleIndex = Random.Range(0, adimSesleri.Count);
+        OynatSes(adimSesleri[rastgeleIndex], 0.6f, 0.85f, 1.1f); 
     }
 
-    // --- ANIMATION EVENT METOTLARI (KILIÇ KONTROLÜ) ---
-    // Bu metotlar Animation Event'ler tarafından çağrılır.
-
+    public void OynatSaldiriSesiEvent()
+    {
+        OynatSes(saldiriSesi, 1f, 0.9f, 1.1f);
+    }
+    
     public void EnableHitbox()
     {
         if (swordDamageControl != null)
         {
-            swordDamageControl.EnableHitbox(); // Kılıç Collider'ı AÇILDI
+            swordDamageControl.EnableHitbox(); 
         }
         if (swordTrail != null) swordTrail.emitting = true;
     }
@@ -147,21 +166,78 @@ public class PlayerController : MonoBehaviour
     {
         if (swordDamageControl != null)
         {
-            swordDamageControl.DisableHitbox(); // Kılıç Collider'ı KAPATILDI
+            swordDamageControl.DisableHitbox(); 
         }
-        isAttacking = false; // Hareket kilidi kalktı
-        CancelInvoke("ForceStopAttack");
         
         if (swordTrail != null) swordTrail.emitting = false;
+        
+        isAttacking = false; 
+        CancelInvoke("ForceStopAttack");
     }
 
-    // Emniyet Sübabı Fonksiyonu
+    // --- TEMEL HAREKET VE DURUM METOTLARI ---
+    
+    void Jump()
+    {
+        velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+        OynatSes(ziplamaSesi, 0.8f); 
+
+        if (animator != null && HasParameter("Jump"))
+        {
+            animator.SetTrigger("Jump");
+        }
+    }
+
+    IEnumerator RollRoutine(Vector3 rollDirection)
+    {
+        isRolling = true;
+        animator.SetTrigger("Roll");
+        OynatSes(yuvarlanmaSesi, 1f); 
+
+        float rollDuration = 0.8f;
+        float timer = 0;
+
+        while (timer < rollDuration)
+        {
+            if (controller.enabled) 
+            {
+                 controller.Move(rollDirection.normalized * rollSpeed * Time.deltaTime);
+            }
+            timer += Time.deltaTime;
+            yield return null;
+        }
+        isRolling = false;
+    }
+
+    void StartAttack()
+    {
+        isAttacking = true;
+        if(animator != null)
+        {
+             animator.SetFloat("Speed", 0f);
+             animator.SetTrigger("Attack"); 
+        }
+        
+        Invoke("ForceStopAttack", ATTACK_DURATION_SAFETY);
+    }
+
     void ForceStopAttack()
     {
-        Debug.LogWarning("ForceStopAttack çağrıldı. Animasyon Event'i eksik veya süre çok uzun.");
-        DisableHitbox(); // Kılıç kontrolü ve kilidi açma
+        if (isAttacking)
+        {
+            Debug.LogWarning("ForceStopAttack çağrıldı. Animasyon Event'i eksik veya süre çok uzun.");
+            DisableHitbox();
+        }
     }
-
-    public void TrailAc() { if (swordTrail != null) swordTrail.emitting = true; }
-    public void TrailKapat() { if (swordTrail != null) swordTrail.emitting = false; }
+    
+    // --- ANIMATOR PARAMETRE KONTROLÜ ---
+    bool HasParameter(string paramName)
+    {
+        if (animator == null) return false;
+        foreach (AnimatorControllerParameter param in animator.parameters)
+        {
+            if (param.name == paramName) return true;
+        }
+        return false;
+    }
 }
