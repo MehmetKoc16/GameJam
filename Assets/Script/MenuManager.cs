@@ -1,20 +1,22 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.Video; // Video iþlemleri için bu kütüphaneyi ekledik
+using UnityEngine.Video;
 
 public class MenuManager : MonoBehaviour
 {
     [Header("Video ve Panel Ayarlarý")]
-    public VideoPlayer introVideoPlayer; // Inspector'dan Video Player'ý sürükle
-    public GameObject menuButtonsGroup;  // Inspector'dan 'Buttons' objesini sürükle
-    public GameObject introVideoPanel;   // Inspector'dan 'IntroVideoPanel'i sürükle
+    public VideoPlayer introVideoPlayer;
+    public GameObject menuButtonsGroup;
+    public GameObject introVideoPanel;
+
+    [Header("Efekt Ayarlarý")] // YENÝ: Efektleri buraya sürükleyeceðiz
+    public GameObject[] menuEffects; // Ateþ, Duman, Yaðmur objelerini buraya at
 
     [Header("Sahne Ayarlarý")]
-    public int oyunSahnesiIndexi = 1;    // Build Settings'teki oyun sahne sýrasý
+    public int oyunSahnesiIndexi = 1;
 
     void Start()
     {
-        // Oyun baþladýðýnda video bitiþ olayýný dinlemeye baþla
         if (introVideoPlayer != null)
         {
             introVideoPlayer.loopPointReached += VideoBitti;
@@ -25,27 +27,39 @@ public class MenuManager : MonoBehaviour
 
     public void OyunBasla()
     {
-        // Eðer video player ve panel atanmýþsa videolu geçiþ yap
         if (introVideoPlayer != null && introVideoPanel != null)
         {
-            menuButtonsGroup.SetActive(false); // Butonlarý gizle
-            introVideoPanel.SetActive(true);   // Video ekranýný aç
-            introVideoPlayer.Play();           // Videoyu oynat
+            // 1. Butonlarý gizle
+            menuButtonsGroup.SetActive(false);
+
+            // 2. Efektleri kapat (YENÝ KISIM)
+            // Listeye eklediðin tüm efektleri (ateþ, duman, yaðmur) kapatýr
+            if (menuEffects != null)
+            {
+                foreach (GameObject efekt in menuEffects)
+                {
+                    if (efekt != null)
+                    {
+                        efekt.SetActive(false);
+                    }
+                }
+            }
+
+            // 3. Video panelini aç ve oynat
+            introVideoPanel.SetActive(true);
+            introVideoPlayer.Play();
         }
         else
         {
-            // Eðer video ayarlanmamýþsa direkt oyuna gir (Hata vermesin)
             StartGameScene();
         }
     }
 
-    // Video bitince bu fonksiyon otomatik çalýþýr
     void VideoBitti(VideoPlayer vp)
     {
         StartGameScene();
     }
 
-    // Gerçek sahne yükleme iþlemi
     void StartGameScene()
     {
         SceneManager.LoadScene(oyunSahnesiIndexi);
@@ -70,5 +84,16 @@ public class MenuManager : MonoBehaviour
     {
         SceneManager.LoadScene(0);
         Time.timeScale = 1;
+    }
+    public void VideoyuGec()
+    {
+        // Videoyu durdur (Ses arkada kalmasýn diye garanti olsun)
+        if (introVideoPlayer != null)
+        {
+            introVideoPlayer.Stop();
+        }
+
+        // Direkt oyunu baþlatma fonksiyonunu çaðýr
+        StartGameScene();
     }
 }
