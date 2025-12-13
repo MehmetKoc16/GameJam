@@ -218,12 +218,12 @@ PrefabInstance:
       objectReference: {fileID: 330585546}
     - target: {fileID: 8456377627711615569, guid: bee322134510a154b95b757abc824bde, type: 3}
       propertyPath: adimSesleri.Array.size
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8456377627711615569, guid: bee322134510a154b95b757abc824bde, type: 3}
       propertyPath: 'adimSesleri.Array.data[0]'
       value: 
-      objectReference: {fileID: 8300000, guid: e21296a512a93a54986fd61f36ad183b, type: 3}
+      objectReference: {fileID: 8300000, guid: 94916e8fcd3894c4a888fc77685ebc45, type: 3}
     - target: {fileID: 8456377627711615569, guid: bee322134510a154b95b757abc824bde, type: 3}
       propertyPath: 'adimSesleri.Array.data[1]'
       value: 
