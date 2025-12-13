@@ -28,6 +28,7 @@ public class BossAI : MonoBehaviour
     public float waitTimeAtPoint = 3f; 
     private float waitTimer;
     
+    public BossAttackHitbox[] hitboxes;
     // Saldırı Ayarları
     public float attackRange = 2.5f; 
 
@@ -272,6 +273,35 @@ public class BossAI : MonoBehaviour
             }
         }
     }
+
+public void EnableBossHitboxes()
+{
+    if (hitboxes != null)
+    {
+        foreach (var hitbox in hitboxes)
+        {
+            if (hitbox != null)
+            {
+                hitbox.EnableBossHitbox(); // Her iki eli de AKTİF et
+            }
+        }
+    }
+}
+
+// Bu metot Boss'un saldırı animasyonunun BİTİŞ Event'i ile çağrılır
+public void DisableBossHitboxes()
+{
+    if (hitboxes != null)
+    {
+        foreach (var hitbox in hitboxes)
+        {
+            if (hitbox != null)
+            {
+                hitbox.DisableBossHitbox(); // Her iki eli de KAPAT
+            }
+        }
+    }
+}
 
     /// <summary>
     /// Boss'un ölüm işlemlerini yönetir.

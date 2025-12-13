@@ -1,35 +1,94 @@
 using UnityEngine;
 
-[RequireComponent(typeof(Animator))] // Bu scriptin olduğu yerde Animator olmak zorunda
 public class HitReactor : MonoBehaviour
 {
-    private Animator _animator;
+    private Animator animator;
+    private PlayerController playerController; // Hareketi durdurmak iÃ§in
+    private PlayerHealth playerHealth;       // PlayerHealth script'ine eriÅŸim iÃ§in YENÄ° REFERANS
+    
+    // Animator Parametre Ä°simleri (Unity'de ne kullandÄ±ysanÄ±z aynÄ± olmalÄ±)
+    private readonly string takeHitTrigger = "TakeHit"; 
+    private readonly string isDeadBool = "IsDead"; 
+    
+    // Hasar alÄ±ndÄ±ktan sonra bekleme sÃ¼resi (oyuncuyu kontrolsÃ¼z tutmak iÃ§in)
+    public float hitReactionTime = 0.5f;
+    private float hitTimer = 0f;
 
-    private void Awake()
+    void Start()
     {
-        _animator = GetComponent<Animator>();
+        animator = GetComponent<Animator>();
+        playerController = GetComponent<PlayerController>();
+        playerHealth = GetComponent<PlayerHealth>(); // AynÄ± objeden PlayerHealth'i al
+
+        if (animator == null)
+        {
+            Debug.LogError("HitReactor: Animator bileÅŸeni bulunamadÄ±!");
+        }
+        if (playerHealth == null)
+        {
+            Debug.LogError("HitReactor: PlayerHealth bileÅŸeni bulunamadÄ±! SaÄŸlÄ±k kontrolÃ¼ yapÄ±lamayacak.");
+        }
+    }
+    
+    void Update()
+    {
+        // Hasar reaksiyonu sÃ¼resini yÃ¶net
+        if (hitTimer > 0)
+        {
+            hitTimer -= Time.deltaTime;
+            
+            // Reaksiyon bittiÄŸinde, PlayerController'Ä± tekrar etkinleÅŸtir
+            // HATA DÃœZELTÄ°LDÄ°: PlayerHealth.isDead yerine playerHealth.isDead kullanÄ±ldÄ±.
+            if (hitTimer <= 0 && playerController != null && !playerController.enabled) 
+            {
+                // YalnÄ±zca PlayerHealth referansÄ± varsa VE oyuncu Ã¶lmemiÅŸse hareketi geri ver
+                if (playerHealth != null && !playerHealth.isDead) 
+                {
+                    playerController.enabled = true;
+                }
+            }
+        }
     }
 
-    // Bu fonksiyon dışarıdan (Can scriptinden veya Düşman silahından) çağrılacak
-    public void HandleHitReaction(Vector3 attackerPosition)
+    /// <summary>
+    /// Hasar alÄ±ndÄ±ÄŸÄ±nda tetiklenir ve hasar yÃ¶nÃ¼ne gÃ¶re animasyon parametresi ayarlar.
+    /// </summary>
+    /// <param name="attackerPos">SaldÄ±ranÄ±n pozisyonu.</param>
+    public void HandleHitReaction(Vector3 attackerPos)
     {
-        // 1. Düşmanın (veya hasar kaynağının) yönünü hesapla
-        Vector3 directionToAttacker = attackerPosition - transform.position;
-        directionToAttacker.y = 0; // Yükseklik farkını önemseme
+        if (animator == null || playerHealth == null || playerHealth.isDead) return;
+        
+        // 1. Hasar YÃ¶nÃ¼nÃ¼ Hesaplama: Karakterin arkasÄ±ndan mÄ±, Ã¶nÃ¼nden mi vuruldu?
+        Vector3 hitDirection = (transform.position - attackerPos).normalized;
+        float angle = Vector3.SignedAngle(transform.forward, hitDirection, Vector3.up);
+        
+        // 2. Animasyon Tetikleme:
+        animator.SetTrigger(takeHitTrigger);
+        
+        // 3. GeÃ§ici Hareketsizlik:
+        if (playerController != null)
+        {
+            playerController.enabled = false;
+        }
+        hitTimer = hitReactionTime;
+    }
 
-        // 2. Yönü karakterin local (yerel) koordinatlarına çevir
-        // Bu sayede "Sağ", karakterin sağı olur; dünyanın sağı değil.
-        Vector3 localDir = transform.InverseTransformDirection(directionToAttacker);
-        localDir.Normalize();
-
-        // 3. Animator parametrelerini güncelle
-        _animator.SetFloat("HitX", localDir.x);
-        _animator.SetFloat("HitZ", localDir.z);
-
-        // 4. Trigger'ı çek ve animasyonu başlat
-        _animator.SetTrigger("GetHit");
-
-        // Debug için konsola yönü yazdıralım (Test ettikten sonra silebilirsin)
-        Debug.Log($"Darbe Yönü: {localDir} | X: {localDir.x}, Z: {localDir.z}");
+    /// <summary>
+    /// Oyuncunun canÄ± 0'a ulaÅŸtÄ±ÄŸÄ±nda Ã§aÄŸrÄ±lÄ±r ve Ã¶lÃ¼m animasyonunu baÅŸlatÄ±r.
+    /// </summary>
+    public void HandleDeath()
+    {
+        if (animator == null) return;
+        
+        // Karakteri Ã¶ldÃ¼ olarak iÅŸaretle
+        animator.SetBool(isDeadBool, true); 
+        
+        // Hareketi kesin olarak durdur
+        if (playerController != null)
+        {
+            playerController.enabled = false;
+        }
+        
+        Debug.Log("HitReactor: Ã–lÃ¼m tepkisi tetiklendi.");
     }
 }

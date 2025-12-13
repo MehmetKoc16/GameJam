@@ -1,60 +1,58 @@
-
 using UnityEngine;
 
 public class SwordDamage : MonoBehaviour
 {
-    public int swordDamageAmount = 100;
     private Collider swordCollider; 
+    public int swordDamageAmount = 100;
+
+    public GameObject hitEffectPrefab;
 
     void Start()
     {
         swordCollider = GetComponent<Collider>();
-
         if (swordCollider == null)
         {
-            Debug.LogError("SwordDamage script'i, üzerinde Collider olmayan bir objeye eklendi!");
+            Debug.LogError("SwordDamage: Collider bulunamadı! Lütfen kılıç objesine bir Collider ekleyin.");
             return;
         }
-
-        // KRİTİK: Başlangıçta Collider'ı kapatın! Bu, yaklaştığınızda hasar almayı engeller.
-        swordCollider.enabled = false;
+        
+        // Başlangıçta Collider'ı kapat
+        swordCollider.enabled = false; 
     }
 
-    // Animasyon Event'i ile çağrılacak metot (Kılıç sallanmaya başladığında)
+    // --- MERKEZİ KONTROL FONKSİYONLARI ---
+
+    // PlayerController tarafından kılıcı açmak için çağrılır
     public void EnableHitbox()
     {
         if (swordCollider != null)
         {
             swordCollider.enabled = true;
-            Debug.Log("Kılıç Collider AÇIK");
+            // Debug.Log("Kılıç Hitbox AÇIK"); // Test için
         }
     }
 
-    // Animasyon Event'i ile çağrılacak metot (Kılıç sallama bittiğinde)
+    // PlayerController tarafından kılıcı kapatmak için çağrılır
     public void DisableHitbox()
     {
         if (swordCollider != null)
         {
             swordCollider.enabled = false;
-            Debug.Log("Kılıç Collider KAPALI");
+            // Debug.Log("Kılıç Hitbox KAPALI"); // Test için
         }
     }
 
     // Hasar verme mantığı
     private void OnTriggerEnter(Collider other)
     {
-        // Sadece BOSS_HITBOX Tag'ine sahip ana gövdeye vurulduğunda devam et
-        if (other.gameObject.CompareTag("BOSS_HITBOX"))
+        // SADECE BOSS_HITBOX TAG'ine sahip objeye hasar ver
+        if (other.CompareTag("BOSS_HITBOX"))
         {
+            Instantiate(hitEffectPrefab, other.ClosestPoint(transform.position), Quaternion.identity);
             BossAI boss = other.GetComponent<BossAI>(); 
-            Debug.Log("Kılıç Boss'un ana gövdesine çarptı.");
-
             if (boss != null)
             {
-                Debug.Log($"Kılıç, Boss'un ana gövdesine temas etti. Hasar Verildi: {swordDamageAmount}");
                 boss.TakeDamage(swordDamageAmount); 
-                
-                // Kılıç bir mermi değil, kalıcı obje olduğu için yok etmiyoruz.
             }
         }
     }

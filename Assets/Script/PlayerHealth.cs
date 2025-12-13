@@ -3,20 +3,26 @@ using UnityEngine.UI;
 
 public class PlayerHealth : MonoBehaviour
 {
-    [Header("Can Ayarları")]
+    [Header("Can AyarlarÄ±")]
     public float maxHealth = 100f;
     public float currentHealth;
+    public bool isDead = false; // Ã–lÃ¼m durumunu ekledik
 
-    [Header("UI Bağlantısı")]
+    [Header("UI BaÄŸlantÄ±sÄ±")]
     public Image healthBarFill;
 
-    // HitReactor scriptine referans (Animasyonları bu yönetecek)
+    // HitReactor scriptine referans (AnimasyonlarÄ± bu yÃ¶netecek)
     private HitReactor _hitReactor;
 
     void Start()
     {
-        // Aynı obje üzerindeki HitReactor scriptini bul
+        // AynÄ± obje Ã¼zerindeki HitReactor scriptini bul
         _hitReactor = GetComponent<HitReactor>();
+
+        if (_hitReactor == null)
+        {
+            Debug.LogWarning("PlayerHealth: HitReactor scripti bu objede bulunamadÄ±. Hasar tepkileri Ã§alÄ±ÅŸmayacaktÄ±r.");
+        }
 
         currentHealth = maxHealth;
         UpdateHealthUI();
@@ -24,45 +30,51 @@ public class PlayerHealth : MonoBehaviour
 
     void Update()
     {
-        // TEST: "H" tuşuna basınca kendine zarar ver
+        // TEST: "H" tuÅŸuna basÄ±nca kendine zarar ver
         if (Input.GetKeyDown(KeyCode.H))
         {
-            // Test ederken "nereden vurdu?" sorusuna cevap vermemiz lazım.
-            // Simülasyon: Tam karşımızda (transform.forward) duran biri vurmuş gibi yapalım.
-            // Böylece karakterin "Önden Darbe Alma" (Hit Back) animasyonuna girmesi gerekir.
-            Vector3 fakeAttackerPos = transform.position + transform.forward;
+            // SimÃ¼lasyon: Tam karÅŸÄ±mÄ±zda duran biri vurmuÅŸ gibi yapalÄ±m.
+            Vector3 fakeAttackerPos = transform.position + transform.forward * 2f; 
 
-            TakeDamage(10, fakeAttackerPos);
+            TakeDamage(10f, fakeAttackerPos);
         }
     }
 
-    // Hasar Alma Fonksiyonu GÜNCELLENDİ: Artık saldıranın pozisyonunu da istiyor
+    /// <summary>
+    /// Oyuncuya hasar verir ve tepki sistemini tetikler.
+    /// </summary>
+    /// <param name="damageAmount">AlÄ±nacak hasar miktarÄ±.</param>
+    /// <param name="attackerPos">SaldÄ±ranÄ±n dÃ¼nya pozisyonu (Tepki animasyonu iÃ§in kullanÄ±lÄ±r).</param>
     public void TakeDamage(float damageAmount, Vector3 attackerPos)
     {
+        if (isDead) return; // Zaten Ã¶lmÃ¼ÅŸsek iÅŸlem yapma
+
         currentHealth -= damageAmount;
 
-        // Can 0'ın altına düşmesin
+        // Can 0'Ä±n altÄ±na dÃ¼ÅŸmesin
         if (currentHealth < 0) currentHealth = 0;
 
-        // UI'ı güncelle
+        // UI'Ä± gÃ¼ncelle
         UpdateHealthUI();
-
-        // --- YENİ EKLENEN KISIM ---
-        // Eğer ölmediysek ve HitReactor scripti varsa tepki ver
-        if (currentHealth > 0 && _hitReactor != null)
-        {
-            _hitReactor.HandleHitReaction(attackerPos);
-        }
-        // --------------------------
 
         if (currentHealth <= 0)
         {
             Die();
+            return;
+        }
+
+        // --- Hasar Tepkisi ---
+        // EÄŸer Ã¶lmediysek ve HitReactor scripti varsa tepki ver
+        if (_hitReactor != null)
+        {
+            _hitReactor.HandleHitReaction(attackerPos);
         }
     }
 
     public void Heal(float healAmount)
     {
+        if (isDead) return;
+
         currentHealth += healAmount;
         if (currentHealth > maxHealth) currentHealth = maxHealth;
         UpdateHealthUI();
@@ -78,8 +90,17 @@ public class PlayerHealth : MonoBehaviour
 
     void Die()
     {
-        Debug.Log("ÖLDÜNÜZ!");
-        // Buraya ragdoll açma veya ölüm animasyonu gelecek
-        // GetComponent<Animator>().SetTrigger("Die"); gibi.
+        if (isDead) return;
+        isDead = true;
+        
+        Debug.Log("OYUNCU Ã–LDÃœ!");
+        
+        // Ã–lÃ¼m durumunda hareketi durdur, ragdoll/animasyon tetikle
+        // Ã–rn: if (GetComponent<PlayerController>() != null) GetComponent<PlayerController>().enabled = false;
+        
+        if (_hitReactor != null)
+        {
+            _hitReactor.HandleDeath(); // Ã–lÃ¼m animasyonunu HitReactor'a devret
+        }
     }
 }

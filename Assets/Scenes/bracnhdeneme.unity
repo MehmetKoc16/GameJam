@@ -438,7 +438,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 62c0163eb2f6fbc40a8c524351d516ab, type: 3}
       propertyPath: m_Name
-      value: Dreyar By M.Aure
+      value: Omen
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 62c0163eb2f6fbc40a8c524351d516ab, type: 3}
       propertyPath: m_TagString
@@ -894,6 +894,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1082884237834527890, guid: 39a53a7c7e3670e4d9fa4f4cef1bb9ea, type: 3}
+      propertyPath: hitEffectPrefab
+      value: 
+      objectReference: {fileID: 4163373934737219855, guid: a0be0bbb5b6bc1447828c679d49c143e, type: 3}
     - target: {fileID: 2434622720107997233, guid: 39a53a7c7e3670e4d9fa4f4cef1bb9ea, type: 3}
       propertyPath: m_Name
       value: SKM_DKM_Full
@@ -906,6 +910,10 @@ PrefabInstance:
       propertyPath: cameraTransform
       value: 
       objectReference: {fileID: 580078335}
+    - target: {fileID: 2841338886965717611, guid: 39a53a7c7e3670e4d9fa4f4cef1bb9ea, type: 3}
+      propertyPath: swordDamageControl
+      value: 
+      objectReference: {fileID: 1939122417}
     - target: {fileID: 3063103993465123467, guid: 39a53a7c7e3670e4d9fa4f4cef1bb9ea, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.58
@@ -989,6 +997,17 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 1003755039}
   m_SourcePrefab: {fileID: 100100000, guid: 39a53a7c7e3670e4d9fa4f4cef1bb9ea, type: 3}
+--- !u!114 &1939122417 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1082884237834527890, guid: 39a53a7c7e3670e4d9fa4f4cef1bb9ea, type: 3}
+  m_PrefabInstance: {fileID: 1892516630}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9b86c0ac62cdb4bba6aec2f05edf66, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1993525121
 GameObject:
   m_ObjectHideFlags: 0

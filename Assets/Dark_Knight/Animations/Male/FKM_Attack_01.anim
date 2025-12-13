@@ -55540,6 +55540,13 @@ AnimationClip:
     floatParameter: 0
     intParameter: 0
     messageOptions: 0
+  - time: 0.5
+    functionName: EnableHitbox
+    data: 
+    objectReferenceParameter: {fileID: 0}
+    floatParameter: 0
+    intParameter: 0
+    messageOptions: 0
   - time: 0.73333335
     functionName: TrailKapat
     data: 
@@ -55562,7 +55569,7 @@ AnimationClip:
     intParameter: 0
     messageOptions: 0
   - time: 0.73333335
-    functionName: TrailKapat
+    functionName: TrailAc
     data: 
     objectReferenceParameter: {fileID: 0}
     floatParameter: 0
@@ -55577,6 +55584,13 @@ AnimationClip:
     messageOptions: 0
   - time: 0.73333335
     functionName: TrailKapat
+    data: 
+    objectReferenceParameter: {fileID: 0}
+    floatParameter: 0
+    intParameter: 0
+    messageOptions: 0
+  - time: 1.7333333
+    functionName: DisableHitbox
     data: 
     objectReferenceParameter: {fileID: 0}
     floatParameter: 0

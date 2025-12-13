@@ -3,14 +3,15 @@ using System.Collections;
 
 public class PlayerController : MonoBehaviour
 {
-    // BÝLEÞENLER
+    // BÄ°LEÅžENLER
     public CharacterController controller;
     public Transform cameraTransform;
     public Animator animator;
     public TrailRenderer swordTrail;
 
-    [Header("Silah Ayarlarý")]
-    public Collider swordCollider; // YENÝ: Kýlýcýn collider'ýný buraya baðlayacaðýz
+    [Header("Silah KontrolÃ¼")]
+    // Buraya kÄ±lÄ±Ã§ objesinin Ã¼zerindeki SwordDamage script'i baÄŸlanacak
+    public SwordDamage swordDamageControl; 
 
     // HIZ AYARLARI
     public float walkSpeed = 2f;
@@ -19,13 +20,13 @@ public class PlayerController : MonoBehaviour
     public float turnSmoothTime = 0.1f;
     float turnSmoothVelocity;
 
-    // YERÇEKÝMÝ
+    // YERÃ‡EKÄ°MÄ°
     Vector3 velocity;
     public float gravity = -9.81f;
 
-    // DURUM KONTROLÜ
+    // DURUM KONTROLÃœ
     bool isRolling = false;
-    bool isAttacking = false; // Saldýrý kilidi
+    bool isAttacking = false; 
 
     void Start()
     {
@@ -34,14 +35,21 @@ public class PlayerController : MonoBehaviour
 
         Cursor.lockState = CursorLockMode.Locked;
         if (swordTrail != null) swordTrail.emitting = false;
-
-        // Oyun baþlarken kýlýç kesmesin, kapalý olsun
-        if (swordCollider != null) swordCollider.enabled = false;
+        
+        // KÄ±lÄ±Ã§ kontrolÃ¼ artÄ±k SwordDamage script'i tarafÄ±ndan yapÄ±lÄ±yor.
+        // Bu Start'ta sadece baÄŸlantÄ±nÄ±n kontrolÃ¼ yeterli.
+        if (swordDamageControl == null)
+        {
+            Debug.LogError("PlayerController: Sword Damage Control referansÄ± eksik!");
+        }
     }
 
     void Update()
     {
-        // 1. YERÇEKÝMÝ (Her zaman çalýþmalý)
+        // HATA KORUMASI: CharacterController etkin deÄŸilse hareket etme
+        if (controller == null || !controller.enabled) return;
+
+        // 1. YERÃ‡EKÄ°MÄ° 
         if (controller.isGrounded && velocity.y < 0)
         {
             velocity.y = -2f;
@@ -49,17 +57,16 @@ public class PlayerController : MonoBehaviour
         velocity.y += gravity * Time.deltaTime;
         controller.Move(velocity * Time.deltaTime);
 
-        // KÝLÝT NOKTA: Yuvarlanýyorsak VEYA Saldýrýyorsak hareket kodlarýný çalýþtýrma
+        // KÄ°LÄ°T NOKTA: YuvarlanÄ±yorsak VEYA SaldÄ±rÄ±yorsak hareket kodlarÄ±nÄ± Ã§alÄ±ÅŸtÄ±rma
         if (isRolling || isAttacking) return;
 
-        // 2. GÝRDÝLERÝ AL
+        // 2. GÄ°RDÄ°LERÄ° AL (Horizontal, Vertical, vb...)
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
         Vector3 direction = new Vector3(horizontal, 0f, vertical).normalized;
-
         bool isRunning = Input.GetKey(KeyCode.LeftShift);
 
-        // 3. HAREKET MANTIÐI
+        // 3. HAREKET MANTIÄžI (YÃ¶nlendirme ve Move Ã§aÄŸrÄ±larÄ±)
         if (direction.magnitude >= 0.1f)
         {
             float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + cameraTransform.eulerAngles.y;
@@ -69,7 +76,7 @@ public class PlayerController : MonoBehaviour
             Vector3 moveDir = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
             float currentSpeed = isRunning ? runSpeed : walkSpeed;
 
-            controller.Move(moveDir.normalized * currentSpeed * Time.deltaTime);
+            controller.Move(moveDir.normalized * currentSpeed * Time.deltaTime); 
 
             if (Input.GetKeyDown(KeyCode.LeftControl))
             {
@@ -77,7 +84,7 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        // 4. ANÝMASYON
+        // 4. ANÄ°MASYON (SpeedSetFloat ayarlarÄ±)
         float targetAnimSpeed = 0f;
         if (direction.magnitude >= 0.1f) targetAnimSpeed = isRunning ? 1f : 0.5f;
 
@@ -95,6 +102,7 @@ public class PlayerController : MonoBehaviour
     // --- YUVARLANMA ---
     IEnumerator RollRoutine(Vector3 rollDirection)
     {
+        // ... (Roll mantÄ±ÄŸÄ± aynÄ± kalÄ±r) ...
         isRolling = true;
         animator.SetTrigger("Roll");
 
@@ -102,43 +110,56 @@ public class PlayerController : MonoBehaviour
         float timer = 0;
         while (timer < rollDuration)
         {
-            controller.Move(rollDirection.normalized * rollSpeed * Time.deltaTime);
+             if (controller.enabled) 
+             {
+                controller.Move(rollDirection.normalized * rollSpeed * Time.deltaTime);
+             }
             timer += Time.deltaTime;
             yield return null;
         }
         isRolling = false;
     }
 
-    // --- SALDIRI BAÞLATMA ---
+    // --- SALDIRI BAÅžLATMA ---
     void StartAttack()
     {
         isAttacking = true; // Hareketi kilitle
-        animator.SetFloat("Speed", 0f); // Koþma animasyonunu kes
+        animator.SetFloat("Speed", 0f); // KoÅŸma animasyonunu kes
         animator.SetTrigger("Attack");
 
-        // YENÝ: Saldýrý baþladý, kýlýcý AKTÝF ET (Kessin)
-        if (swordCollider != null) swordCollider.enabled = true;
-
-        // Emniyet sübabý
+        // Emniyet sÃ¼babÄ± (Animasyon Event'i kaÃ§arsa kilidi aÃ§ar)
         Invoke("ForceStopAttack", 1.2f);
     }
 
-    // --- HATAYI ÇÖZEN VE KÝLÝDÝ AÇAN FONKSÝYON ---
-    public void AttackBitti()
-    {
-        isAttacking = false; // Kilidi aç, hareket edebilirsin
-        CancelInvoke("ForceStopAttack");
+    // --- ANIMATION EVENT METOTLARI (KILIÃ‡ KONTROLÃœ) ---
+    // Bu metotlar Animation Event'ler tarafÄ±ndan Ã§aÄŸrÄ±lÄ±r.
 
-        // YENÝ: Saldýrý bitti, kýlýcý KAPAT (Artýk kesmesin)
-        if (swordCollider != null) swordCollider.enabled = false;
+    public void EnableHitbox()
+    {
+        if (swordDamageControl != null)
+        {
+            swordDamageControl.EnableHitbox(); // KÄ±lÄ±Ã§ Collider'Ä± AÃ‡ILDI
+        }
+        if (swordTrail != null) swordTrail.emitting = true;
     }
 
-    // Emniyet Sübabý Fonksiyonu
+    public void DisableHitbox()
+    {
+        if (swordDamageControl != null)
+        {
+            swordDamageControl.DisableHitbox(); // KÄ±lÄ±Ã§ Collider'Ä± KAPATILDI
+        }
+        isAttacking = false; // Hareket kilidi kalktÄ±
+        CancelInvoke("ForceStopAttack");
+        
+        if (swordTrail != null) swordTrail.emitting = false;
+    }
+
+    // Emniyet SÃ¼babÄ± Fonksiyonu
     void ForceStopAttack()
     {
-        isAttacking = false;
-        // YENÝ: Süre dolduysa kýlýcý kapat
-        if (swordCollider != null) swordCollider.enabled = false;
+        Debug.LogWarning("ForceStopAttack Ã§aÄŸrÄ±ldÄ±. Animasyon Event'i eksik veya sÃ¼re Ã§ok uzun.");
+        DisableHitbox(); // KÄ±lÄ±Ã§ kontrolÃ¼ ve kilidi aÃ§ma
     }
 
     public void TrailAc() { if (swordTrail != null) swordTrail.emitting = true; }
