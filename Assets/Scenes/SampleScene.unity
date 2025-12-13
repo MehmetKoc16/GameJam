@@ -398,8 +398,12 @@ MonoBehaviour:
   target: {fileID: 283661233}
   mouseSensitivity: 2
   distanceFromTarget: 10
-  pitchMinMax: {x: -40, y: 85}
+  pitchMinMax: {x: -5, y: 85}
   rotationSmoothTime: 0.12
+  collisionLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  cameraCollisionOffset: 0.2
 --- !u!1 &357478311 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3802214273818586271, guid: bee322134510a154b95b757abc824bde, type: 3}
