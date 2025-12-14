@@ -15,7 +15,7 @@ public class PlayerController : MonoBehaviour
     public List<AudioClip> adimSesleri; // Kesip hazırladığın adım seslerini buraya sürükle
     public AudioClip ziplamaSesi;       // Zıplama "Hıhh!" sesi
     public AudioClip yuvarlanmaSesi;    // Yuvarlanma efekti
-    public AudioClip saldiriSesi;       // Kılıç savurma sesi (Whoosh)
+           
 
     [Header("Silah Ayarları")]
     public Collider swordCollider;
@@ -26,6 +26,8 @@ public class PlayerController : MonoBehaviour
     public float rollSpeed = 8f;
     public float turnSmoothTime = 0.1f;
     float turnSmoothVelocity;
+
+    public float minSpeedForFootstep = 0.1f;
 
     // YERÇEKİMİ VE ZIPLAMA
     Vector3 velocity;
@@ -130,29 +132,32 @@ public class PlayerController : MonoBehaviour
     // --- SES FONKSİYONLARI (Animation Event Burayı Çağıracak) ---
     public void OynatAdimSesi()
     {
-        // Eğer havadaysak veya liste boşsa ses çalma
-        if (!isGrounded || adimSesleri.Count == 0) return;
+        // 1. HIZ KONTROLÜ (Sadece hareketliyse ses çal)
+        AudioManager.Instance.PlayStepSound();
+        // Y eksenindeki hızı (zıplama/düşme) ihmal ederek yatay hızı hesapla.
+        Vector3 horizontalVelocity = controller.velocity;
+        horizontalVelocity.y = 0;
+        float currentSpeed = horizontalVelocity.magnitude;
 
-        // Sesin tonunu rastgele değiştir (0.8 ile 1.1 arası) -> Doğallık katar
+        // Eğer yerde değilsek VEYA hızımız çok düşükse VEYA ses listesi boşsa hemen çık.
+        // minSpeedForFootstep değişkeninin public float minSpeedForFootstep = 0.1f; olarak tanımlı olduğunu varsayıyoruz.
+        if (!isGrounded || currentSpeed < minSpeedForFootstep || adimSesleri.Count == 0)
+        {
+            return;
+        }
+
+        // 2. SES ÇALMA MANTIĞI
+
+        // Sesin tonunu rastgele değiştir (0.85f ile 1.1f arası) -> Doğallık katar
         audioSource.pitch = Random.Range(0.85f, 1.1f);
 
         // Listeden rastgele bir ses seç
         int rastgeleIndex = Random.Range(0, adimSesleri.Count);
 
         // Sesi bir kere oynat
-        audioSource.PlayOneShot(adimSesleri[rastgeleIndex], 0.6f); // 0.6f ses şiddeti
+        audioSource.PlayOneShot(adimSesleri[rastgeleIndex], 2f); // 0.6f ses şiddeti
     }
 
-    // YENİ EKLEDİĞİMİZ SALDIRI SESİ ÇAĞRI FONKSİYONU
-    public void OynatSaldiriSesiEvent()
-    {
-        // Bu fonksiyonu tam kılıcın hızlandığı yerde animasyondan çağıracağız.
-        if (saldiriSesi != null)
-        {
-            audioSource.pitch = Random.Range(0.9f, 1.1f); // Hafif varyasyon kat
-            audioSource.PlayOneShot(saldiriSesi, 1f);
-        }
-    }
 
     void OynatSes(AudioClip klip, float siddet = 1f)
     {
@@ -200,6 +205,7 @@ public class PlayerController : MonoBehaviour
         isAttacking = true;
         animator.SetFloat("Speed", 0f);
         animator.SetTrigger("Attack");
+        AudioManager.Instance.PlaySwordSliceSound();
         // OynatSes(saldiriSesi, 1f); // <-- BURAYI YORUM SATIRI YAPTIM / KALDIRDIM. Sesi artık animasyon içinden Event ile çağıracağız.
 
         if (swordCollider != null) swordCollider.enabled = true;
