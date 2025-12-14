@@ -461,5 +461,6 @@ public class BossAI : MonoBehaviour
 
         // İlk sahneyi yükle
         SceneManager.LoadScene(firstSceneName);
+        
     }
 }

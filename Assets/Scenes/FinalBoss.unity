@@ -763,11 +763,11 @@ VideoPlayer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 361162226}
   m_Enabled: 1
-  m_VideoClip: {fileID: 32900000, guid: 3876664955ad09842b39ca88efc9a2ae, type: 3}
+  m_VideoClip: {fileID: 32900000, guid: fae8fa44cecf4ae4f9a3898e163795b0, type: 3}
   m_TargetCameraAlpha: 1
   m_TargetCamera3DLayout: 0
   m_TargetCamera: {fileID: 0}
-  m_TargetTexture: {fileID: 8400000, guid: 458eeacec32420640a4152d40301db50, type: 2}
+  m_TargetTexture: {fileID: 8400000, guid: cbda695611ed5bd40abc8dce91304c93, type: 2}
   m_TimeReference: 0
   m_TargetMaterialRenderer: {fileID: 0}
   m_TargetMaterialProperty: <noninit>
@@ -6324,9 +6324,7 @@ MonoBehaviour:
   - {fileID: 1946298525}
   attackRange: 10
   hurtStunDuration: 0.5
-  environmentSounds:
-  - {fileID: 0}
-  - {fileID: 0}
+  environmentSounds: []
   endingVideoPlayer: {fileID: 0}
   videoUIObject: {fileID: 0}
   firstSceneName: MainMenu
@@ -7766,6 +7764,7 @@ GameObject:
   - component: {fileID: 1272697202}
   - component: {fileID: 1272697204}
   - component: {fileID: 1272697203}
+  - component: {fileID: 1272697205}
   m_Layer: 5
   m_Name: VideoImage
   m_TagString: Untagged
@@ -7813,7 +7812,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Texture: {fileID: 8400000, guid: 458eeacec32420640a4152d40301db50, type: 2}
+  m_Texture: {fileID: 8400000, guid: cbda695611ed5bd40abc8dce91304c93, type: 2}
   m_UVRect:
     serializedVersion: 2
     x: 0
@@ -7828,6 +7827,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1272697201}
   m_CullTransparentMesh: 1
+--- !u!114 &1272697205
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1272697201}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fd897a988d5a0594488e2d334b30572b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  beklemeSuresi: 120
+  yuklenecekSahneAdi: MainMenu
 --- !u!4 &1293416927 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 848526680351768384, guid: de9c2666f91883b4280ce135198fbaac, type: 3}
