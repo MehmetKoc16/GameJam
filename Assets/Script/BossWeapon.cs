@@ -22,8 +22,6 @@ public class BossWeapon : MonoBehaviour
  
                 // --- SEÇENEK 2: Eğer TakeDamage sayı + pozisyon istiyorsa (Önceki konuşmalara istinaden) ---
                 playerHealth.TakeDamage(damageAmount, transform.position);
-
-                Debug.Log("Boss oyuncuya vurdu! Kalan Can: Bilinmiyor (Scriptten bak)");
                 
                 // Bir vuruşta 50 kere hasar vermemesi için silahı geçici kapatabiliriz
                 isWeaponActive = false; 

@@ -12,20 +12,27 @@ public class SwordDamage : MonoBehaviour
     void Start()
     {
         swordCollider = GetComponent<Collider>();
+        
         if (swordCollider == null)
         {
-            Debug.LogError("SwordDamage: Collider bulunamadı!");
+            Debug.LogError("SwordDamage: Bu objede Collider (Box/Capsule) bulunamadı!");
             return;
         }
 
+        // Başlangıçta kılıç kapalı olsun (Sadece saldırınca açılsın)
         swordCollider.enabled = false;
+        
+        // Çarpışma fiziği değil, tetikleyici olarak çalışmalı
+        swordCollider.isTrigger = true; 
     }
 
+    // PlayerController tarafından çağrılacak
     public void EnableHitbox()
     {
         if (swordCollider != null) swordCollider.enabled = true;
     }
 
+    // PlayerController tarafından çağrılacak
     public void DisableHitbox()
     {
         if (swordCollider != null) swordCollider.enabled = false;
@@ -33,31 +40,39 @@ public class SwordDamage : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        // Tag kontrolü
+        // Sadece BOSS_HITBOX etiketli yerlere (kol, bacak, gövde) vur
         if (other.CompareTag("BOSS_HITBOX"))
         {
-            Debug.Log("Temas sağlandı: BOSS_HITBOX algılandı."); // Konsolda bunu görüyorsan Tag ve Collider sağlamdır.
+            Debug.Log("Kılıç Boss'a temas etti!");
 
             // --- EFEKT KISMI ---
             if (hitEffectPrefab != null)
             {
-                GameObject vfx = Instantiate(hitEffectPrefab, other.ClosestPoint(transform.position), Quaternion.identity);
+                // Temas noktasına efekt koy
+                Vector3 hitPoint = other.ClosestPoint(transform.position);
+                GameObject vfx = Instantiate(hitEffectPrefab, hitPoint, Quaternion.identity);
                 Destroy(vfx, effectDuration);
             }
 
-            // --- DÜZELTME BURADA ---
-            // Çarptığımız obje (kol/bacak) sadece bir parçadır. 
-            // Script ana karakterde olduğu için 'InParent' kullanmak ZORUNDAYIZ.
+            // --- HASAR GÖNDERME ---
+            // BossAI scripti genelde Hitbox'ın ebeveynindedir (Parent).
+            // Hitbox kolunda olsa bile ana gövdedeki can scriptini bulur.
             BossAI boss = other.GetComponentInParent<BossAI>();
 
             if (boss != null)
             {
                 boss.TakeDamage(swordDamageAmount);
-                Debug.Log("BossAI bulundu ve hasar gönderildi.");
+                Debug.Log("Hasar BossAI scriptine iletildi.");
+                
+                // İstersen bir vuruşta birden fazla kez hasar vermemesi için
+                // vurduğu an collider'ı kapatabilirsin (Opsiyonel):
+                // DisableHitbox(); 
             }
             else
             {
-                Debug.LogWarning("DİKKAT: BOSS_HITBOX var ama BossAI scripti Parent'ta bulunamadı!");
+                // Yedek kontrol: Belki direkt scriptin olduğu objeye vurmuşuzdur
+                boss = other.GetComponent<BossAI>();
+                if (boss != null) boss.TakeDamage(swordDamageAmount);
             }
         }
     }

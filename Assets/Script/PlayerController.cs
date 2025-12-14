@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
-using System.Collections.Generic; // Listeleri kullanmak için gerekli
+using System.Collections.Generic;
+
 
 public class PlayerController : MonoBehaviour
 {
@@ -10,15 +11,16 @@ public class PlayerController : MonoBehaviour
     public Animator animator;
     public TrailRenderer swordTrail;
 
-    [Header("Ses Ayarları (YENİ)")]
-    public AudioSource audioSource; // Karakterin üzerine eklediğin AudioSource
-    public List<AudioClip> adimSesleri; // Kesip hazırladığın adım seslerini buraya sürükle
-    public AudioClip ziplamaSesi;       // Zıplama "Hıhh!" sesi
-    public AudioClip yuvarlanmaSesi;    // Yuvarlanma efekti
-    public AudioClip saldiriSesi;       // Kılıç savurma sesi (Whoosh)
+    [Header("Ses Ayarları")]
+    public AudioSource audioSource;
+    public List<AudioClip> adimSesleri;
+    public AudioClip ziplamaSesi;
+    public AudioClip yuvarlanmaSesi;
+    public AudioClip saldiriSesi;
 
-    [Header("Silah Ayarları")]
-    public Collider swordCollider;
+    [Header("Silah Kontrolü")]
+    // !!! ÖNEMLİ !!!: Inspector'da elindeki Kılıç Objesini buraya sürükle!
+    public SwordDamage swordDamageControl; 
 
     // HIZ AYARLARI
     public float walkSpeed = 2f;
@@ -30,55 +32,59 @@ public class PlayerController : MonoBehaviour
     // YERÇEKİMİ VE ZIPLAMA
     Vector3 velocity;
     public float gravity = -9.81f;
-
-    // JUMP AYARLARI
     public float jumpHeight = 3f;
     bool isGrounded;
 
     // DURUM KONTROLÜ
     bool isRolling = false;
     bool isAttacking = false;
+    
+    // Emniyet Sübabı Süresi
+    private const float ATTACK_DURATION_SAFETY = 1.2f;
+
 
     void Start()
     {
         if (controller == null) controller = GetComponent<CharacterController>();
         if (animator == null) animator = GetComponent<Animator>();
 
-        // Eğer AudioSource atamayı unuttuysan otomatik ekleyelim
         if (audioSource == null) audioSource = GetComponent<AudioSource>();
         if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
-
+        
         Cursor.lockState = CursorLockMode.Locked;
+        
+        // Başlangıçta kılıç izi ve hasarı kapalı olsun
         if (swordTrail != null) swordTrail.emitting = false;
-        if (swordCollider != null) swordCollider.enabled = false;
+        
+        if (swordDamageControl != null)
+        {
+             swordDamageControl.DisableHitbox();
+        }
     }
 
     void Update()
     {
-        // 1. YER KONTROLÜ
+        if (controller == null || !controller.enabled) return;
+
+        // Yer Kontrolü ve Yerçekimi
         isGrounded = controller.isGrounded;
+        if (isGrounded && velocity.y < 0) velocity.y = -2f;
 
-        // Yerçekimi sıfırlama
-        if (isGrounded && velocity.y < 0)
-        {
-            velocity.y = -2f;
-        }
-
-        // --- GİRDİLERİ AL ---
+        // Girdileri Al
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
         Vector3 direction = new Vector3(horizontal, 0f, vertical).normalized;
         bool isRunning = Input.GetKey(KeyCode.LeftShift);
-
-        // --- ZIPLAMA KONTROLÜ ---
+        
+        // Zıplama
         if (Input.GetKeyDown(KeyCode.Space) && isGrounded && !isRolling && !isAttacking)
         {
             Jump();
         }
 
-        // --- HAREKET VEKÖTÜRÜNÜ HESAPLA ---
         Vector3 moveDirection = Vector3.zero;
 
+        // Hareket ve Dönüş
         if (!isRolling && !isAttacking && direction.magnitude >= 0.1f)
         {
             float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + cameraTransform.eulerAngles.y;
@@ -90,19 +96,18 @@ public class PlayerController : MonoBehaviour
 
             moveDirection = moveDir.normalized * currentSpeed;
 
-            // Yuvarlanma tetikleyicisi
+            // Yuvarlanma
             if (Input.GetKeyDown(KeyCode.LeftControl))
             {
                 StartCoroutine(RollRoutine(moveDir));
             }
         }
 
-        // --- ANİMASYON ---
+        // Animasyon Hızı
         if (!isRolling && !isAttacking)
         {
             float targetAnimSpeed = (direction.magnitude >= 0.1f) ? (isRunning ? 1f : 0.5f) : 0f;
-            float currentAnimSpeed = animator.GetFloat("Speed");
-            float smoothedSpeed = Mathf.Lerp(currentAnimSpeed, targetAnimSpeed, Time.deltaTime * 10f);
+            float smoothedSpeed = Mathf.Lerp(animator.GetFloat("Speed"), targetAnimSpeed, Time.deltaTime * 10f);
             animator.SetFloat("Speed", smoothedSpeed);
         }
 
@@ -111,14 +116,14 @@ public class PlayerController : MonoBehaviour
             animator.SetBool("IsGrounded", isGrounded);
         }
 
-        // --- SALDIRI ---
+        // Saldırı Başlatma
         if (Input.GetMouseButtonDown(0) && !isAttacking && !isRolling && isGrounded)
         {
             StartAttack();
-            moveDirection = Vector3.zero;
+            moveDirection = Vector3.zero; // Saldırırken kaymayı önle
         }
 
-        // --- FİZİK UYGULAMA ---
+        // Fizik Uygulama
         if (!isRolling)
         {
             velocity.y += gravity * Time.deltaTime;
@@ -127,103 +132,116 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // --- SES FONKSİYONLARI (Animation Event Burayı Çağıracak) ---
-    public void OynatAdimSesi()
+    // --- ANIMATION EVENTS (KÖPRÜ FONKSİYONLAR) ---
+    // Animasyondaki Event'e Function Name olarak "EnableHitbox" yazacaksın.
+    public void EnableHitbox()
     {
-        // Eğer havadaysak veya liste boşsa ses çalma
-        if (!isGrounded || adimSesleri.Count == 0) return;
-
-        // Sesin tonunu rastgele değiştir (0.8 ile 1.1 arası) -> Doğallık katar
-        audioSource.pitch = Random.Range(0.85f, 1.1f);
-
-        // Listeden rastgele bir ses seç
-        int rastgeleIndex = Random.Range(0, adimSesleri.Count);
-
-        // Sesi bir kere oynat
-        audioSource.PlayOneShot(adimSesleri[rastgeleIndex], 0.6f); // 0.6f ses şiddeti
+        Debug.Log("Kılıç hitbox açıldı.");
+        // 1. Kılıç Scriptine ulaş ve aç
+        if (swordDamageControl != null)
+        {
+            swordDamageControl.EnableHitbox(); 
+        }
+        
+        // 2. Kılıç izini aç
+        if (swordTrail != null) swordTrail.emitting = true;
     }
 
-    // YENİ EKLEDİĞİMİZ SALDIRI SESİ ÇAĞRI FONKSİYONU
-    public void OynatSaldiriSesiEvent()
+    // Animasyondaki Event'e Function Name olarak "DisableHitbox" yazacaksın.
+    public void DisableHitbox()
     {
-        // Bu fonksiyonu tam kılıcın hızlandığı yerde animasyondan çağıracağız.
-        if (saldiriSesi != null)
+        Debug.Log("Kılıç hitbox kapandı.");
+        // 1. Kılıç Scriptine ulaş ve kapat
+        if (swordDamageControl != null)
         {
-            audioSource.pitch = Random.Range(0.9f, 1.1f); // Hafif varyasyon kat
-            audioSource.PlayOneShot(saldiriSesi, 1f);
+            swordDamageControl.DisableHitbox(); 
+        }
+        
+        // 2. Kılıç izini kapat ve saldırı durumunu bitir
+        if (swordTrail != null) swordTrail.emitting = false;
+        
+        isAttacking = false; 
+        CancelInvoke("ForceStopAttack");
+    }
+
+    // --- YARDIMCI METOTLAR ---
+
+    void StartAttack()
+    {
+        isAttacking = true;
+        if(animator != null)
+        {
+             animator.SetFloat("Speed", 0f);
+             animator.SetTrigger("Attack"); 
+        }
+        
+        OynatSaldiriSesiEvent(); // Sesi hemen oynatabiliriz veya anim event'e de koyabilirsin
+        Invoke("ForceStopAttack", ATTACK_DURATION_SAFETY);
+    }
+
+    void ForceStopAttack()
+    {
+        if (isAttacking)
+        {
+            // Debug.LogWarning("ForceStopAttack devreye girdi.");
+            DisableHitbox();
         }
     }
-
-    void OynatSes(AudioClip klip, float siddet = 1f)
-    {
-        if (klip != null)
-        {
-            audioSource.pitch = 1f; // Diğer seslerde pitch normal kalsın
-            audioSource.PlayOneShot(klip, siddet);
-        }
-    }
-
-    // --- JUMP ---
+    
     void Jump()
     {
         velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
-        OynatSes(ziplamaSesi, 0.8f); // Zıplama sesi çal
+        OynatSes(ziplamaSesi, 0.8f); 
 
-        if (animator != null)
+        if (animator != null && HasParameter("Jump"))
         {
             animator.SetTrigger("Jump");
         }
     }
 
-    // --- YUVARLANMA ---
     IEnumerator RollRoutine(Vector3 rollDirection)
     {
         isRolling = true;
         animator.SetTrigger("Roll");
-        OynatSes(yuvarlanmaSesi, 1f); // Yuvarlanma sesi çal
+        OynatSes(yuvarlanmaSesi, 1f); 
 
         float rollDuration = 0.8f;
         float timer = 0;
 
         while (timer < rollDuration)
         {
-            controller.Move(rollDirection.normalized * rollSpeed * Time.deltaTime);
+            if (controller.enabled) 
+            {
+                 controller.Move(rollDirection.normalized * rollSpeed * Time.deltaTime);
+            }
             timer += Time.deltaTime;
             yield return null;
         }
         isRolling = false;
     }
 
-    // --- SALDIRI FONKSİYONLARI ---
-    void StartAttack()
+    // --- SES ve DİĞERLERİ ---
+    void OynatSes(AudioClip klip, float siddet = 1f, float pitchMin = 1f, float pitchMax = 1f)
     {
-        isAttacking = true;
-        animator.SetFloat("Speed", 0f);
-        animator.SetTrigger("Attack");
-        // OynatSes(saldiriSesi, 1f); // <-- BURAYI YORUM SATIRI YAPTIM / KALDIRDIM. Sesi artık animasyon içinden Event ile çağıracağız.
-
-        if (swordCollider != null) swordCollider.enabled = true;
-        Invoke("ForceStopAttack", 1.2f);
+        if (klip != null && audioSource != null)
+        {
+            audioSource.pitch = Random.Range(pitchMin, pitchMax);
+            audioSource.PlayOneShot(klip, siddet);
+        }
     }
 
-    public void AttackBitti()
+    public void OynatAdimSesi()
     {
-        isAttacking = false;
-        CancelInvoke("ForceStopAttack");
-        if (swordCollider != null) swordCollider.enabled = false;
+        if (!isGrounded || adimSesleri.Count == 0) return;
+        int rastgeleIndex = Random.Range(0, adimSesleri.Count);
+        OynatSes(adimSesleri[rastgeleIndex], 0.6f, 0.85f, 1.1f); 
     }
 
-    void ForceStopAttack()
+    public void OynatSaldiriSesiEvent()
     {
-        isAttacking = false;
-        if (swordCollider != null) swordCollider.enabled = false;
+        OynatSes(saldiriSesi, 1f, 0.9f, 1.1f);
     }
-
-    // BU FONKSİYONLARA EK OLARAK:
-    // Kılıç sesini de Event olarak `TrailAc()`'nin hemen yanına veya biraz sonrasına ekleyebilirsin.
-    public void TrailAc() { if (swordTrail != null) swordTrail.emitting = true; }
-    public void TrailKapat() { if (swordTrail != null) swordTrail.emitting = false; }
-
+    
     bool HasParameter(string paramName)
     {
         if (animator == null) return false;

@@ -2,40 +2,31 @@ using UnityEngine;
 
 public class BossAttackHitbox : MonoBehaviour
 {
-    public int damageAmount = 20; 
-    public Collider attackCollider;
-    
-    // Aynı anda birden fazla vurmayı engellemek için basit bir kontrol eklenebilir
-    // Şimdilik senin yapını koruyorum.
+    [Header("Hasar Ayarı")]
+    public float damageAmount = 20f; // Boss vurduğunda kaç can gitsin?
 
-    void OnTriggerEnter(Collider other)
+    // Collider'a bir şey girdiğinde çalışır
+    private void OnTriggerEnter(Collider other)
     {
+        // Çarpan şey "Player" etiketine sahip mi?
         if (other.CompareTag("Player"))
         {
-            // Yeni PlayerHealth scriptini arıyoruz
+            // Oyuncunun üzerindeki PlayerHealth scriptini bul
+            // NOT: Senin oyuncundaki scriptin adı PlayerHealth ise bunu kullan.
+            // Eğer adı farklıysa (örn: PlayerController), aşağıyı ona göre değiştir.
             PlayerHealth playerHealth = other.GetComponent<PlayerHealth>();
 
             if (playerHealth != null)
             {
-                // Saldırı pozisyonunu (kılıcın/hitbox'ın pozisyonu) gönderiyoruz
-                playerHealth.TakeDamage(damageAmount, transform.position); 
+                // Hasarı gönder (Pozisyon bilgisiyle beraber)
+                playerHealth.TakeDamage(damageAmount, transform.position);
                 
-                // Vurduktan sonra collider'ı kapatmak istersen:
-                // attackCollider.enabled = false;
+                Debug.Log("Boss oyuncuya vurdu!");
+
+                // Bir vuruşta defalarca hasar vermemek için collider'ı hemen kapatabiliriz
+                // (İsteğe bağlı, eğer çok seri hasar yiyorsan bu satırı aç)
+                // GetComponent<Collider>().enabled = false; 
             }
         }
-    }
-
-    public void EnableBossHitbox()
-    {
-        if (attackCollider != null)
-        {
-            attackCollider.enabled = true;
-        }
-    }
-    
-    public void DisableBossHitbox()
-    {
-        if (attackCollider != null) attackCollider.enabled = false;
     }
 }

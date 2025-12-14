@@ -237,6 +237,11 @@ public class BossAI : MonoBehaviour
         }
     }
  
+    [ContextMenu("Apply Test Damage")]
+    public void damage()
+    {
+        TakeDamage(250);
+    }
 
     public void TakeDamage(int damageAmount)
     {

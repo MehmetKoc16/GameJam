@@ -271,14 +271,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 330585543}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ebb1aa041ee415a42b8d15cafebffada, type: 3}
+  m_Script: {fileID: 11500000, guid: ad80f49b53498104aaad374fc7187050, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CameraController
+  m_EditorClassIdentifier: 
   target: {fileID: 4580157591836452245}
   mouseSensitivity: 2
-  distanceFromTarget: 10
-  heightOffset: 10
-  pitchMinMax: {x: -5, y: 85}
+  distanceFromTarget: 8
+  pitchMinMax: {x: -40, y: 120}
   rotationSmoothTime: 0.12
   collisionLayers:
     serializedVersion: 2
@@ -1811,7 +1810,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: -12.5, y: 3.4, z: -120}
-  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
+  m_LocalScale: {x: 0.375, y: 0.375, z: 0.375}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2967960948743762754}
@@ -2679,8 +2678,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.05272748, y: 0.08869102, z: 1.0211883}
-  m_Center: {x: 0.000010302007, y: 0.0054027378, z: 0.668868}
+  m_Size: {x: 0.49159232, y: 1.0773196, z: 2.3158312}
+  m_Center: {x: 0.21945499, y: 0.05377108, z: 1.3161947}
 --- !u!1 &804124481555423638
 GameObject:
   m_ObjectHideFlags: 0
@@ -2793,7 +2792,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 44408345769914d4aa5ddec81d8ba512, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 200
+  maxHealth: 1000
   currentHealth: 0
   isDead: 0
   currentState: 0
@@ -2805,7 +2804,9 @@ MonoBehaviour:
   - {fileID: 4817441996556405196}
   - {fileID: 7486477265523355621}
   waitTimeAtPoint: 2
-  hitboxes: []
+  hitboxes:
+  - {fileID: 6747557163660886977}
+  - {fileID: 2465693222193789823}
   attackRange: 2.5
   hurtStunDuration: 0.5
 --- !u!1 &1111147377781260950
@@ -3905,6 +3906,7 @@ GameObject:
   - component: {fileID: 2174652994735253941}
   - component: {fileID: 2465693222193789821}
   - component: {fileID: 2465693222193789822}
+  - component: {fileID: 2465693222193789823}
   m_Layer: 0
   m_Name: mixamorig:RightHand
   m_TagString: Untagged
@@ -3931,8 +3933,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 5.002394, y: 6.010594, z: 1.4583178}
-  m_Center: {x: -1.3985672, y: 2.5053592, z: 0.22916657}
+  m_Size: {x: 5.4353776, y: 12.688173, z: 2.8501923}
+  m_Center: {x: -1.6150798, y: 5.844339, z: 0.92514414}
 --- !u!54 &2465693222193789822
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -3960,6 +3962,19 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 2
+--- !u!114 &2465693222193789823
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2465693222193789820}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e6d7f289c83e01e44b06a55697784caf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  damageAmount: 20
 --- !u!4 &2497804613446363730
 Transform:
   m_ObjectHideFlags: 0
@@ -5360,6 +5375,7 @@ GameObject:
   - component: {fileID: 6747557163660886974}
   - component: {fileID: 6747557163660886975}
   - component: {fileID: 6747557163660886976}
+  - component: {fileID: 6747557163660886977}
   m_Layer: 0
   m_Name: mixamorig:LeftHand
   m_TagString: Untagged
@@ -7793,12 +7809,12 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 4.6275983, y: 7.6725, z: 1.3342121}
-  m_Center: {x: 1.8137871, y: 3.336252, z: 0.041016456}
+  m_Size: {x: 6.5203843, y: 12.48647, z: 5.1944003}
+  m_Center: {x: 2.7601643, y: 5.7432356, z: 0.13997103}
 --- !u!54 &6747557163660886976
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -7826,6 +7842,19 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 2
+--- !u!114 &6747557163660886977
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4177377413358837681}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e6d7f289c83e01e44b06a55697784caf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  damageAmount: 20
 --- !u!137 &6758388039657158438
 SkinnedMeshRenderer:
   m_ObjectHideFlags: 0
@@ -8150,9 +8179,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 817735916675787564}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 67e63d08f0ed6fd46b61e564581fa79c, type: 3}
+  m_Script: {fileID: 11500000, guid: 0199a113d5268df46a2f99ea671c626d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  damageAmount: 100
 --- !u!1 &7060352099561353991
 GameObject:
   m_ObjectHideFlags: 0
@@ -9582,7 +9612,7 @@ MonoBehaviour:
   ziplamaSesi: {fileID: 0}
   yuvarlanmaSesi: {fileID: 0}
   saldiriSesi: {fileID: 0}
-  swordCollider: {fileID: 0}
+  swordDamageControl: {fileID: 1374211267206888927}
   walkSpeed: 5
   runSpeed: 20
   rollSpeed: 8
