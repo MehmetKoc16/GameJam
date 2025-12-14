@@ -277,8 +277,13 @@ MonoBehaviour:
   target: {fileID: 4580157591836452245}
   mouseSensitivity: 2
   distanceFromTarget: 10
+  heightOffset: 10
   pitchMinMax: {x: -5, y: 85}
   rotationSmoothTime: 0.12
+  collisionLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  cameraCollisionOffset: 0.2
 --- !u!82 &357478318
 AudioSource:
   m_ObjectHideFlags: 0
@@ -2474,9 +2479,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxHealth: 100
-  currentHealth: 0
-  isDead: 0
-  healthBarFill: {fileID: 1312892186}
+  healthBarImage: {fileID: 0}
+  deathPanel: {fileID: 0}
+  animator: {fileID: 0}
+  kilicRigidbody: {fileID: 0}
 --- !u!4 &684374422714576995
 Transform:
   m_ObjectHideFlags: 0
@@ -2788,6 +2794,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxHealth: 200
+  currentHealth: 0
   isDead: 0
   currentState: 0
   patrolSpeed: 10
@@ -3154,7 +3161,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e1480b7bbe1c75849b2b0c58f509f0c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  hitReactionTime: 1
 --- !u!4 &1580636549410233745
 Transform:
   m_ObjectHideFlags: 0
@@ -4179,6 +4185,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxHealth: 100
   healthBarImage: {fileID: 1312892186}
+  deathPanel: {fileID: 0}
   animator: {fileID: 7597521738855202799}
   kilicRigidbody: {fileID: 4594378130646961914}
 --- !u!4 &2742145706394211977
@@ -8146,7 +8153,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 67e63d08f0ed6fd46b61e564581fa79c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  damageAmount: 100
 --- !u!1 &7060352099561353991
 GameObject:
   m_ObjectHideFlags: 0
@@ -9576,7 +9582,7 @@ MonoBehaviour:
   ziplamaSesi: {fileID: 0}
   yuvarlanmaSesi: {fileID: 0}
   saldiriSesi: {fileID: 0}
-  swordDamageControl: {fileID: 1374211267206888927}
+  swordCollider: {fileID: 0}
   walkSpeed: 5
   runSpeed: 20
   rollSpeed: 8
