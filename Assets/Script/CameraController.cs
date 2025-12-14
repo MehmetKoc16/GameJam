@@ -2,39 +2,60 @@ using UnityEngine;
 
 public class CameraController : MonoBehaviour
 {
-    public Transform target; // Takip edilecek karakteri buraya sürükleyeceðiz
+    public Transform target;
 
-    public float mouseSensitivity = 2f;   // Mouse hassasiyeti
-    public float distanceFromTarget = 4f; // Karakterden uzaklýk
-    public Vector2 pitchMinMax = new Vector2(-40, 85); // Aþaðý/Yukarý bakma sýnýrý
+    public float mouseSensitivity = 2f;
 
-    public float rotationSmoothTime = 0.12f; // Dönüþ yumuþatma süresi
+    // --- BURAYI DEÄžÄ°ÅžTÄ°RDÄ°K ---
+    // Karakterin dev olduÄŸu iÃ§in mesafeyi artÄ±rdÄ±k (Eskiden 4'tÃ¼)
+    public float distanceFromTarget = 20f;
+    // Karakterin boyu uzadÄ±ÄŸÄ± iÃ§in kameranÄ±n bakacaÄŸÄ± yÃ¼ksekliÄŸi ayarlanabilir yaptÄ±k
+    public float heightOffset = 10f;
+    // ---------------------------
+
+    public Vector2 pitchMinMax = new Vector2(-40, 85);
+
+    public float rotationSmoothTime = 0.12f;
     Vector3 rotationSmoothVelocity;
     Vector3 currentRotation;
 
-    float yaw;   // Yatay eksen (Sað-Sol)
-    float pitch; // Dikey eksen (Yukarý-Aþaðý)
+    float yaw;
+    float pitch;
+
+    [Header("Ã‡arpÄ±ÅŸma AyarlarÄ±")]
+    public LayerMask collisionLayers;
+    public float cameraCollisionOffset = 0.2f;
 
     void LateUpdate()
     {
         if (target == null) return;
 
-        // 1. FARE GÝRDÝSÝNÝ AL
+        // 1. FARE GÄ°RDÄ°SÄ°
         yaw += Input.GetAxis("Mouse X") * mouseSensitivity;
         pitch -= Input.GetAxis("Mouse Y") * mouseSensitivity;
-
-        // 2. AÞAÐI/YUKARI BAKMAYI SINIRLA (Takla atmamasý için)
         pitch = Mathf.Clamp(pitch, pitchMinMax.x, pitchMinMax.y);
 
-        // 3. YUMUÞAK DÖNÜÞ (Smooth Damp)
+        // 2. YUMUÅžAK DÃ–NÃœÅž (Sadece Kamera DÃ¶ner, Karakter DÃ¶nmez)
         Vector3 targetRotation = new Vector3(pitch, yaw);
         currentRotation = Vector3.SmoothDamp(currentRotation, targetRotation, ref rotationSmoothVelocity, rotationSmoothTime);
-
-        // 4. KAMERAYI DÖNDÜR
         transform.eulerAngles = currentRotation;
 
-        // 5. KAMERAYI KARAKTERÝN ARKASINA KOY
-        // (Vector3.up * 1.5f ekleyerek ayaklarýna deðil omuz hizasýna bakmasýný saðlýyoruz)
-        transform.position = target.position - transform.forward * distanceFromTarget + Vector3.up * 1.5f;
+        // 3. POZÄ°SYON HESAPLAMA
+        // ArtÄ±k senin girdiÄŸin 'heightOffset' kadar yukarÄ± bakacak
+        Vector3 focusPosition = target.position + Vector3.up * heightOffset;
+
+        Vector3 cameraDirection = -transform.forward;
+        float finalDistance = distanceFromTarget;
+
+        // Ã‡arpÄ±ÅŸma KontrolÃ¼ (SphereCast)
+        RaycastHit hit;
+        // Dev karakter iÃ§in kÃ¼re Ã§apÄ±nÄ± da biraz artÄ±rdÄ±k (0.2 -> 0.5)
+        if (Physics.SphereCast(focusPosition, 0.5f, cameraDirection, out hit, distanceFromTarget, collisionLayers))
+        {
+            finalDistance = hit.distance - 0.5f - cameraCollisionOffset;
+            if (finalDistance < 0.2f) finalDistance = 0.2f;
+        }
+
+        transform.position = focusPosition + (cameraDirection * finalDistance);
     }
 }

@@ -2,17 +2,17 @@ using UnityEngine;
 
 public class DamageTester : MonoBehaviour
 {
-    [Header("Test Ayarlarý")]
-    public KeyCode saldiriTusu = KeyCode.Space;
+    [Header("Test Ayarlarï¿½")]
+    public KeyCode saldiriTusu = KeyCode.O;
     public float hasarMiktari = 10f;
 
-    [Header("Fizik Ayarlarý")]
-    public float menzil = 5f; // Iþýn ne kadar uzaða gitsin?
-    public LayerMask hedefKatmani; // Sadece 'Player' layer'ýna sahip objelere çarpsýn
+    [Header("Fizik Ayarlarï¿½")]
+    public float menzil = 5f; // Iï¿½ï¿½n ne kadar uzaï¿½a gitsin?
+    public LayerMask hedefKatmani; // Sadece 'Player' layer'ï¿½na sahip objelere ï¿½arpsï¿½n
 
     void Update()
     {
-        // Debug için sahnede kýrmýzý bir lazer çizgisi çizelim (Sadece Scene ekranýnda görünür)
+        // Debug iï¿½in sahnede kï¿½rmï¿½zï¿½ bir lazer ï¿½izgisi ï¿½izelim (Sadece Scene ekranï¿½nda gï¿½rï¿½nï¿½r)
         Debug.DrawRay(transform.position, transform.forward * menzil, Color.red);
 
         if (Input.GetKeyDown(saldiriTusu))
@@ -27,56 +27,56 @@ public class DamageTester : MonoBehaviour
 
         if (Physics.Raycast(transform.position, transform.forward, out hit, menzil, hedefKatmani))
         {
-            // Debug: Neye çarptýðýmýzý görelim
-            Debug.Log("Lazer þuna çarptý: " + hit.transform.name);
+            // Debug: Neye ï¿½arptï¿½ï¿½ï¿½mï¿½zï¿½ gï¿½relim
+            Debug.Log("Lazer ï¿½una ï¿½arptï¿½: " + hit.transform.name);
 
-            // DÜZELTME: GetComponent yerine GetComponentInParent kullanýyoruz.
-            // Bu, "Çarptýðým parçada script yoksa, baðlý olduðu ana objeye bak" demektir.
+            // Dï¿½ZELTME: GetComponent yerine GetComponentInParent kullanï¿½yoruz.
+            // Bu, "ï¿½arptï¿½ï¿½ï¿½m parï¿½ada script yoksa, baï¿½lï¿½ olduï¿½u ana objeye bak" demektir.
             TargetHealth hedefCan = hit.transform.GetComponentInParent<TargetHealth>();
 
             if (hedefCan != null)
             {
                 string hesaplananYon = YonHesapla(hit.transform);
-                Debug.Log($"<color=green>VURDU!</color> Mesafe: {hit.distance} | Yön: {hesaplananYon}");
+                Debug.Log($"<color=green>VURDU!</color> Mesafe: {hit.distance} | Yï¿½n: {hesaplananYon}");
                 hedefCan.TakeDamage(hasarMiktari, hesaplananYon);
             }
             else
             {
-                // Eðer script bulunamazsa bunu da yazdýralým ki bilelim
-                Debug.LogWarning("Bir þeye çarptým ama üzerinde 'TargetHealth' scripti yok! Çarptýðým þey: " + hit.transform.name);
+                // Eï¿½er script bulunamazsa bunu da yazdï¿½ralï¿½m ki bilelim
+                Debug.LogWarning("Bir ï¿½eye ï¿½arptï¿½m ama ï¿½zerinde 'TargetHealth' scripti yok! ï¿½arptï¿½ï¿½ï¿½m ï¿½ey: " + hit.transform.name);
             }
         }
         else
         {
-            Debug.Log("<color=yellow>ISKA!</color> Menzilde veya açýda hedef yok.");
+            Debug.Log("<color=yellow>ISKA!</color> Menzilde veya aï¿½ï¿½da hedef yok.");
         }
     }
 
-    // Bu fonksiyon Tester'ýn, Oyuncunun neresinde durduðunu bulur
+    // Bu fonksiyon Tester'ï¿½n, Oyuncunun neresinde durduï¿½unu bulur
     string YonHesapla(Transform oyuncu)
     {
-        // Tester'ýn pozisyonunu, Oyuncunun koordinat sistemine çevir
-        // Bu iþlem bize "Oyuncuya göre ben neredeyim?" sorusunun cevabýný verir.
+        // Tester'ï¿½n pozisyonunu, Oyuncunun koordinat sistemine ï¿½evir
+        // Bu iï¿½lem bize "Oyuncuya gï¿½re ben neredeyim?" sorusunun cevabï¿½nï¿½ verir.
         Vector3 yerelKonum = oyuncu.InverseTransformPoint(transform.position);
 
-        // yerelKonum.z -> Ýleri (+) / Geri (-)
-        // yerelKonum.x -> Sað (+) / Sol (-)
+        // yerelKonum.z -> ï¿½leri (+) / Geri (-)
+        // yerelKonum.x -> Saï¿½ (+) / Sol (-)
 
-        // Önce Z eksenine (Ön/Arka) bakalým
-        // Eðer Z deðeri, X deðerinin mutlak halinden büyükse, baskýn yön ÖN veya ARKA'dýr.
+        // ï¿½nce Z eksenine (ï¿½n/Arka) bakalï¿½m
+        // Eï¿½er Z deï¿½eri, X deï¿½erinin mutlak halinden bï¿½yï¿½kse, baskï¿½n yï¿½n ï¿½N veya ARKA'dï¿½r.
         if (Mathf.Abs(yerelKonum.z) > Mathf.Abs(yerelKonum.x))
         {
             if (yerelKonum.z > 0)
-                return "On";   // Oyuncunun önündeyiz
+                return "On";   // Oyuncunun ï¿½nï¿½ndeyiz
             else
-                return "Arka"; // Oyuncunun arkasýndayýz (Gerekirse eklersin)
+                return "Arka"; // Oyuncunun arkasï¿½ndayï¿½z (Gerekirse eklersin)
         }
-        else // Deðilse baskýn yön SAÐ veya SOL'dur
+        else // Deï¿½ilse baskï¿½n yï¿½n SAï¿½ veya SOL'dur
         {
             if (yerelKonum.x > 0)
-                return "Sag";  // Oyuncunun saðýndayýz
+                return "Sag";  // Oyuncunun saï¿½ï¿½ndayï¿½z
             else
-                return "Sol";  // Oyuncunun solundayýz
+                return "Sol";  // Oyuncunun solundayï¿½z
         }
     }
 }

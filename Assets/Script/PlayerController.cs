@@ -1,6 +1,6 @@
 using UnityEngine;
 using System.Collections;
-using System.Collections.Generic;
+using System.Collections.Generic; // Listeleri kullanmak için gerekli
 
 public class PlayerController : MonoBehaviour
 {
@@ -10,16 +10,15 @@ public class PlayerController : MonoBehaviour
     public Animator animator;
     public TrailRenderer swordTrail;
 
-    [Header("Ses Ayarları")]
-    public AudioSource audioSource;
-    public List<AudioClip> adimSesleri;
-    public AudioClip ziplamaSesi;
-    public AudioClip yuvarlanmaSesi;
-    public AudioClip saldiriSesi;
+    [Header("Ses Ayarları (YENİ)")]
+    public AudioSource audioSource; // Karakterin üzerine eklediğin AudioSource
+    public List<AudioClip> adimSesleri; // Kesip hazırladığın adım seslerini buraya sürükle
+    public AudioClip ziplamaSesi;       // Zıplama "Hıhh!" sesi
+    public AudioClip yuvarlanmaSesi;    // Yuvarlanma efekti
+    public AudioClip saldiriSesi;       // Kılıç savurma sesi (Whoosh)
 
-    [Header("Silah Kontrolü")]
-    // Kılıç objesi üzerindeki SwordDamage script'ine referans
-    public SwordDamage swordDamageControl; 
+    [Header("Silah Ayarları")]
+    public Collider swordCollider;
 
     // HIZ AYARLARI
     public float walkSpeed = 2f;
@@ -31,57 +30,55 @@ public class PlayerController : MonoBehaviour
     // YERÇEKİMİ VE ZIPLAMA
     Vector3 velocity;
     public float gravity = -9.81f;
+
+    // JUMP AYARLARI
     public float jumpHeight = 3f;
     bool isGrounded;
 
     // DURUM KONTROLÜ
     bool isRolling = false;
     bool isAttacking = false;
-    
-    // Emniyet Sübabı Süresi
-    private const float ATTACK_DURATION_SAFETY = 1.2f;
-
 
     void Start()
     {
         if (controller == null) controller = GetComponent<CharacterController>();
         if (animator == null) animator = GetComponent<Animator>();
 
+        // Eğer AudioSource atamayı unuttuysan otomatik ekleyelim
         if (audioSource == null) audioSource = GetComponent<AudioSource>();
         if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
-        
+
         Cursor.lockState = CursorLockMode.Locked;
         if (swordTrail != null) swordTrail.emitting = false;
-        
-        if (swordDamageControl != null)
-        {
-             swordDamageControl.DisableHitbox();
-        }
+        if (swordCollider != null) swordCollider.enabled = false;
     }
 
     void Update()
     {
-        if (controller == null || !controller.enabled) return;
-
-        // Yer Kontrolü ve Yerçekimi
+        // 1. YER KONTROLÜ
         isGrounded = controller.isGrounded;
-        if (isGrounded && velocity.y < 0) velocity.y = -2f;
 
-        // Girdileri Al
+        // Yerçekimi sıfırlama
+        if (isGrounded && velocity.y < 0)
+        {
+            velocity.y = -2f;
+        }
+
+        // --- GİRDİLERİ AL ---
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
         Vector3 direction = new Vector3(horizontal, 0f, vertical).normalized;
         bool isRunning = Input.GetKey(KeyCode.LeftShift);
-        
-        // Zıplama
+
+        // --- ZIPLAMA KONTROLÜ ---
         if (Input.GetKeyDown(KeyCode.Space) && isGrounded && !isRolling && !isAttacking)
         {
             Jump();
         }
 
+        // --- HAREKET VEKÖTÜRÜNÜ HESAPLA ---
         Vector3 moveDirection = Vector3.zero;
 
-        // Hareket ve Dönüş
         if (!isRolling && !isAttacking && direction.magnitude >= 0.1f)
         {
             float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + cameraTransform.eulerAngles.y;
@@ -93,18 +90,19 @@ public class PlayerController : MonoBehaviour
 
             moveDirection = moveDir.normalized * currentSpeed;
 
-            // Yuvarlanma
+            // Yuvarlanma tetikleyicisi
             if (Input.GetKeyDown(KeyCode.LeftControl))
             {
                 StartCoroutine(RollRoutine(moveDir));
             }
         }
 
-        // Animasyon Hızı
+        // --- ANİMASYON ---
         if (!isRolling && !isAttacking)
         {
             float targetAnimSpeed = (direction.magnitude >= 0.1f) ? (isRunning ? 1f : 0.5f) : 0f;
-            float smoothedSpeed = Mathf.Lerp(animator.GetFloat("Speed"), targetAnimSpeed, Time.deltaTime * 10f);
+            float currentAnimSpeed = animator.GetFloat("Speed");
+            float smoothedSpeed = Mathf.Lerp(currentAnimSpeed, targetAnimSpeed, Time.deltaTime * 10f);
             animator.SetFloat("Speed", smoothedSpeed);
         }
 
@@ -113,14 +111,14 @@ public class PlayerController : MonoBehaviour
             animator.SetBool("IsGrounded", isGrounded);
         }
 
-        // Saldırı
+        // --- SALDIRI ---
         if (Input.GetMouseButtonDown(0) && !isAttacking && !isRolling && isGrounded)
         {
             StartAttack();
             moveDirection = Vector3.zero;
         }
 
-        // Fizik Uygulama
+        // --- FİZİK UYGULAMA ---
         if (!isRolling)
         {
             velocity.y += gravity * Time.deltaTime;
@@ -129,108 +127,103 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // --- Ses Yardımcı Metot ---
-    void OynatSes(AudioClip klip, float siddet = 1f, float pitchMin = 1f, float pitchMax = 1f)
+    // --- SES FONKSİYONLARI (Animation Event Burayı Çağıracak) ---
+    public void OynatAdimSesi()
     {
-        if (klip != null && audioSource != null)
+        // Eğer havadaysak veya liste boşsa ses çalma
+        if (!isGrounded || adimSesleri.Count == 0) return;
+
+        // Sesin tonunu rastgele değiştir (0.8 ile 1.1 arası) -> Doğallık katar
+        audioSource.pitch = Random.Range(0.85f, 1.1f);
+
+        // Listeden rastgele bir ses seç
+        int rastgeleIndex = Random.Range(0, adimSesleri.Count);
+
+        // Sesi bir kere oynat
+        audioSource.PlayOneShot(adimSesleri[rastgeleIndex], 0.6f); // 0.6f ses şiddeti
+    }
+
+    // YENİ EKLEDİĞİMİZ SALDIRI SESİ ÇAĞRI FONKSİYONU
+    public void OynatSaldiriSesiEvent()
+    {
+        // Bu fonksiyonu tam kılıcın hızlandığı yerde animasyondan çağıracağız.
+        if (saldiriSesi != null)
         {
-            audioSource.pitch = Random.Range(pitchMin, pitchMax);
+            audioSource.pitch = Random.Range(0.9f, 1.1f); // Hafif varyasyon kat
+            audioSource.PlayOneShot(saldiriSesi, 1f);
+        }
+    }
+
+    void OynatSes(AudioClip klip, float siddet = 1f)
+    {
+        if (klip != null)
+        {
+            audioSource.pitch = 1f; // Diğer seslerde pitch normal kalsın
             audioSource.PlayOneShot(klip, siddet);
         }
     }
-    
-    // --- ANIMATION EVENTS ---
 
-    public void OynatAdimSesi()
-    {
-        if (!isGrounded || adimSesleri.Count == 0) return;
-        int rastgeleIndex = Random.Range(0, adimSesleri.Count);
-        OynatSes(adimSesleri[rastgeleIndex], 0.6f, 0.85f, 1.1f); 
-    }
-
-    public void OynatSaldiriSesiEvent()
-    {
-        OynatSes(saldiriSesi, 1f, 0.9f, 1.1f);
-    }
-    
-    public void EnableHitbox()
-    {
-        if (swordDamageControl != null)
-        {
-            swordDamageControl.EnableHitbox(); 
-        }
-        if (swordTrail != null) swordTrail.emitting = true;
-    }
-
-    public void DisableHitbox()
-    {
-        if (swordDamageControl != null)
-        {
-            swordDamageControl.DisableHitbox(); 
-        }
-        
-        if (swordTrail != null) swordTrail.emitting = false;
-        
-        isAttacking = false; 
-        CancelInvoke("ForceStopAttack");
-    }
-
-    // --- TEMEL HAREKET VE DURUM METOTLARI ---
-    
+    // --- JUMP ---
     void Jump()
     {
         velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
-        OynatSes(ziplamaSesi, 0.8f); 
+        OynatSes(ziplamaSesi, 0.8f); // Zıplama sesi çal
 
-        if (animator != null && HasParameter("Jump"))
+        if (animator != null)
         {
             animator.SetTrigger("Jump");
         }
     }
 
+    // --- YUVARLANMA ---
     IEnumerator RollRoutine(Vector3 rollDirection)
     {
         isRolling = true;
         animator.SetTrigger("Roll");
-        OynatSes(yuvarlanmaSesi, 1f); 
+        OynatSes(yuvarlanmaSesi, 1f); // Yuvarlanma sesi çal
 
         float rollDuration = 0.8f;
         float timer = 0;
 
         while (timer < rollDuration)
         {
-            if (controller.enabled) 
-            {
-                 controller.Move(rollDirection.normalized * rollSpeed * Time.deltaTime);
-            }
+            controller.Move(rollDirection.normalized * rollSpeed * Time.deltaTime);
             timer += Time.deltaTime;
             yield return null;
         }
         isRolling = false;
     }
 
+    // --- SALDIRI FONKSİYONLARI ---
     void StartAttack()
     {
         isAttacking = true;
-        if(animator != null)
-        {
-             animator.SetFloat("Speed", 0f);
-             animator.SetTrigger("Attack"); 
-        }
-        
-        Invoke("ForceStopAttack", ATTACK_DURATION_SAFETY);
+        animator.SetFloat("Speed", 0f);
+        animator.SetTrigger("Attack");
+        // OynatSes(saldiriSesi, 1f); // <-- BURAYI YORUM SATIRI YAPTIM / KALDIRDIM. Sesi artık animasyon içinden Event ile çağıracağız.
+
+        if (swordCollider != null) swordCollider.enabled = true;
+        Invoke("ForceStopAttack", 1.2f);
+    }
+
+    public void AttackBitti()
+    {
+        isAttacking = false;
+        CancelInvoke("ForceStopAttack");
+        if (swordCollider != null) swordCollider.enabled = false;
     }
 
     void ForceStopAttack()
     {
-        if (isAttacking)
-        {
-            Debug.LogWarning("ForceStopAttack çağrıldı. Animasyon Event'i eksik veya süre çok uzun.");
-            DisableHitbox();
-        }
+        isAttacking = false;
+        if (swordCollider != null) swordCollider.enabled = false;
     }
-    
-    // --- ANIMATOR PARAMETRE KONTROLÜ ---
+
+    // BU FONKSİYONLARA EK OLARAK:
+    // Kılıç sesini de Event olarak `TrailAc()`'nin hemen yanına veya biraz sonrasına ekleyebilirsin.
+    public void TrailAc() { if (swordTrail != null) swordTrail.emitting = true; }
+    public void TrailKapat() { if (swordTrail != null) swordTrail.emitting = false; }
+
     bool HasParameter(string paramName)
     {
         if (animator == null) return false;

@@ -2,12 +2,12 @@ using UnityEngine;
 
 public class SwordDamage : MonoBehaviour
 {
-    private Collider swordCollider; 
+    private Collider swordCollider;
     public int swordDamageAmount = 100;
 
     [Header("Efekt Ayarları")]
     public GameObject hitEffectPrefab;
-    public float effectDuration = 2.0f; // Efekt kaç saniye sonra silinsin?
+    public float effectDuration = 2.0f;
 
     void Start()
     {
@@ -17,8 +17,8 @@ public class SwordDamage : MonoBehaviour
             Debug.LogError("SwordDamage: Collider bulunamadı!");
             return;
         }
-        
-        swordCollider.enabled = false; 
+
+        swordCollider.enabled = false;
     }
 
     public void EnableHitbox()
@@ -33,25 +33,31 @@ public class SwordDamage : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        // Tag kontrolü
         if (other.CompareTag("BOSS_HITBOX"))
         {
-            // --- EFEKT KISMI (GÜNCELLENDİ) ---
+            Debug.Log("Temas sağlandı: BOSS_HITBOX algılandı."); // Konsolda bunu görüyorsan Tag ve Collider sağlamdır.
+
+            // --- EFEKT KISMI ---
             if (hitEffectPrefab != null)
             {
-                // 1. Efekti oluştur ve "vfx" adında bir kutuya koy
                 GameObject vfx = Instantiate(hitEffectPrefab, other.ClosestPoint(transform.position), Quaternion.identity);
-                
-                // 2. Bu "vfx" objesini, belirlediğimiz süre (effectDuration) dolunca yok et
                 Destroy(vfx, effectDuration);
             }
 
-            // --- BOSS HASAR KISMI (DÜZELTİLMİŞ HALİ) ---
-            // Hatırlatma: BossAI scripti genelde ana objede olur, o yüzden GetComponentInParent kullanıyoruz.
-            BossAI boss = other.GetComponentInParent<BossAI>(); 
-            
+            // --- DÜZELTME BURADA ---
+            // Çarptığımız obje (kol/bacak) sadece bir parçadır. 
+            // Script ana karakterde olduğu için 'InParent' kullanmak ZORUNDAYIZ.
+            BossAI boss = other.GetComponentInParent<BossAI>();
+
             if (boss != null)
             {
-                boss.TakeDamage(swordDamageAmount); 
+                boss.TakeDamage(swordDamageAmount);
+                Debug.Log("BossAI bulundu ve hasar gönderildi.");
+            }
+            else
+            {
+                Debug.LogWarning("DİKKAT: BOSS_HITBOX var ama BossAI scripti Parent'ta bulunamadı!");
             }
         }
     }

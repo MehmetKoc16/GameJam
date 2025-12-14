@@ -8,18 +8,26 @@ public class TargetHealth : MonoBehaviour
     private float currentHealth;
     private bool isDead = false;
 
-    [Header("Bağlantılar")]
+    [Header("UI Baglantilari")]
     public Image healthBarImage;
-    public Animator animator;
 
-    [Header("Silah Ayarları")]
-    // YENİ: Kılıcın Rigidbody'sini buraya bağlayacağız
-    public Rigidbody kilicRigidbody;
+    [Header("Ã–lÃ¼m EkranÄ±")] // --- YENÄ° EKLENEN KISIM ---
+    public GameObject deathPanel; // Unity Inspector'da buraya Siyah Paneli sÃ¼rÃ¼kle
+
+    [Header("Animasyon ve Fizik")]
+    public Animator animator;
+    public Rigidbody kilicRigidbody; // KÄ±lÄ±cÄ±n Rigidbody'si
 
     void Start()
     {
         currentHealth = maxHealth;
         UpdateHealthBar();
+
+        // Oyun baÅŸladÄ±ÄŸÄ±nda panel aÃ§Ä±ksa kapatalÄ±m
+        if (deathPanel != null)
+        {
+            deathPanel.SetActive(false);
+        }
     }
 
     public void TakeDamage(float amount, string direction)
@@ -48,7 +56,7 @@ public class TargetHealth : MonoBehaviour
 
     void Die()
     {
-        Debug.Log("Karakter Öldü!");
+        Debug.Log("Karakter Ã–ldÃ¼!");
         isDead = true;
 
         if (animator != null)
@@ -56,29 +64,41 @@ public class TargetHealth : MonoBehaviour
             animator.SetTrigger("Die");
         }
 
-        // YENİ: Kılıcı düşürme fonksiyonunu çağır
+        // KÄ±lÄ±cÄ± dÃ¼ÅŸÃ¼rme fonksiyonunu Ã§aÄŸÄ±r
         KiliciDuser();
+
+        // --- YENÄ° EKLENEN KISIM: Panel AÃ§ma ve Mouse ---
+
+        // 1. Ã–lÃ¼m Panelini GÃ¶rÃ¼nÃ¼r Yap
+        if (deathPanel != null)
+        {
+            deathPanel.SetActive(true);
+        }
+
+        // 2. Mouse Ä°mlecini Serbest BÄ±rak ve GÃ¶ster (TÄ±klama yapabilmek iÃ§in)
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 
-    // YENİ: Kılıcı elden ayıran ve fiziği başlatan fonksiyon
+    // KÄ±lÄ±cÄ± elden ayÄ±ran ve fiziÄŸi baÅŸlatan fonksiyon
     void KiliciDuser()
     {
         if (kilicRigidbody != null)
         {
-            // 1. Kılıcı karakterden ayır (Parent'ı sil)
+            // 1. KÄ±lÄ±cÄ± karakterden ayÄ±r (Parent'Ä± sil)
             kilicRigidbody.transform.parent = null;
 
-            // 2. Fiziği aç (Kinematik kapat)
+            // 2. FiziÄŸi aÃ§ (Kinematik kapat)
             kilicRigidbody.isKinematic = false;
 
-            // 3. YERÇEKİMİNİ AÇ (Bunu eklemeyi unutmuşuz!)
+            // 3. YerÃ§ekimini aÃ§
             kilicRigidbody.useGravity = true;
 
-            // 4. Collider'ı aç
+            // 4. Collider'Ä± aÃ§
             BoxCollider col = kilicRigidbody.GetComponent<BoxCollider>();
             if (col != null) col.enabled = true;
 
-            // 5. Çok hafif bir hareket ver (Daha doğal düşsün diye)
+            // 5. Ã‡ok hafif bir hareket ver (Daha doÄŸal dÃ¼ÅŸsÃ¼n diye)
             kilicRigidbody.AddTorque(Random.insideUnitSphere * 1f);
         }
     }
@@ -90,13 +110,13 @@ public class TargetHealth : MonoBehaviour
 
         switch (direction)
         {
-            case "On":  // Önden saldırı
+            case "On":  // Ã–nden saldÄ±rÄ±
                 zVal = 1f;
                 break;
-            case "Sag": // Sağdan saldırı
+            case "Sag": // SaÄŸdan saldÄ±rÄ±
                 xVal = 1f;
                 break;
-            case "Sol": // Soldan saldırı
+            case "Sol": // Soldan saldÄ±rÄ±
                 xVal = -1f;
                 break;
         }

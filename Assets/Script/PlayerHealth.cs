@@ -1,121 +1,143 @@
 using UnityEngine;
 using UnityEngine.UI;
-using System.Collections; // Coroutine için gerekli
 
 public class PlayerHealth : MonoBehaviour
 {
     [Header("Can Ayarları")]
     public float maxHealth = 100f;
-    public float currentHealth;
-    public bool isDead = false;
+    private float currentHealth;
+    private bool isDead = false;
 
-    [Header("UI Bağlantısı")]
-    public Image healthBarFill;
+    [Header("UI Bağlantıları")]
+    public Image healthBarImage; // Can barı görseli
+    public GameObject deathPanel; // Ölünce açılacak siyah panel
 
-    // --- YENİ EKLENEN REFERANSLAR ---
-    private HitReactor _hitReactor;      // Animasyon yönü için (Eski sistemin)
-    private PlayerController _controller; // Hareketi durdurmak için (Yeni sistem)
+    [Header("Animasyon ve Fizik")]
+    public Animator animator;
+    public Rigidbody kilicRigidbody; // Oyuncunun elindeki kılıcın Rigidbody'si
 
     void Start()
     {
-        // Scriptleri otomatik bul
-        _hitReactor = GetComponent<HitReactor>();
-        _controller = GetComponent<PlayerController>();
-
-        if (_hitReactor == null) Debug.LogWarning("HitReactor bulunamadı (Animasyon tepkisi olmayabilir).");
-        if (_controller == null) Debug.LogWarning("PlayerController bulunamadı (Karakter hasar alınca duraksamayabilir).");
-
         currentHealth = maxHealth;
-        UpdateHealthUI();
-    }
+        UpdateHealthBar();
 
-    void Update()
-    {
-        // TEST: "H" tuşu ile kendine hasar ver
-        if (Input.GetKeyDown(KeyCode.H))
+        // Oyun başladığında panel açıksa kapatalım
+        if (deathPanel != null)
         {
-            Vector3 fakeAttackerPos = transform.position + transform.forward * 2f; 
-            TakeDamage(10f, fakeAttackerPos);
+            deathPanel.SetActive(false);
         }
     }
 
-    public void TakeDamage(float damageAmount, Vector3 attackerPos)
+    // BossAttackHitbox'tan çağrılan fonksiyon
+    public void TakeDamage(float amount, Vector3 attackerPos)
     {
         if (isDead) return;
 
-        currentHealth -= damageAmount;
+        currentHealth -= amount;
         if (currentHealth < 0) currentHealth = 0;
 
-        UpdateHealthUI();
+        UpdateHealthBar();
 
         if (currentHealth <= 0)
         {
             Die();
-            return;
         }
-
-        // --- HASAR TEPKİSİ VE STUN ---
-        
-        // 1. Eğer HitReactor varsa animasyonu ona oynat (Senin eski sistemin)
-        if (_hitReactor != null)
+        else
         {
-            _hitReactor.HandleHitReaction(attackerPos);
-        }
-
-        // 2. Eğer HitReactor yoksa veya hareket kontrolü ondaysa bile, 
-        // GARANTİ OLSUN DİYE buradan da kısa süreliğine hareketi kilitliyoruz.
-        if (_controller != null)
-        {
-            StopAllCoroutines(); // Üst üste hasar yerse süreyi sıfırla
-            StartCoroutine(StunPlayer(0.5f)); // 0.5 saniye don
+            // Ölmediysek hasar alma animasyonunu oynat
+            if (animator != null)
+            {
+                // Gelen saldırının yönünü hesapla (Vektör Matematiği)
+                CalculatHitDirection(attackerPos);
+                animator.SetTrigger("GetHit");
+            }
         }
     }
 
-    // Karakteri kısa süre dondurup sonra tekrar açan fonksiyon
-    IEnumerator StunPlayer(float duration)
+    void CalculatHitDirection(Vector3 attackerPos)
     {
-        if (_controller != null) _controller.enabled = false; // Hareketi Kapat
-        
-        yield return new WaitForSeconds(duration); // Bekle
-        
-        // Eğer ölmediysek hareketi geri aç
-        if (!isDead && _controller != null)
+        // Saldıranın pozisyonunu oyuncunun yerel koordinatlarına çeviriyoruz
+        // Bu sayede "Benim sağımda mı solumda mı?" sorusunun cevabını alırız.
+        Vector3 incomingDir = attackerPos - transform.position;
+        Vector3 localDir = transform.InverseTransformDirection(incomingDir);
+
+        float xVal = 0;
+        float zVal = 0;
+
+        // localDir.x > 0 ise saldırı SAĞDAN gelmiştir
+        // localDir.x < 0 ise saldırı SOLDAN gelmiştir
+        // localDir.z > 0 ise saldırı ÖNDEN gelmiştir
+
+        // Basit bir mantıkla en baskın yönü seçelim:
+        if (Mathf.Abs(localDir.x) > Mathf.Abs(localDir.z))
         {
-            _controller.enabled = true; // Hareketi Aç (DONMAYI ÇÖZEN KISIM)
+            // Yanlardan gelen darbe daha baskın
+            if (localDir.x > 0) xVal = 1f; // Sağ
+            else xVal = -1f; // Sol
         }
-    }
-
-    public void Heal(float healAmount)
-    {
-        if (isDead) return;
-
-        currentHealth += healAmount;
-        if (currentHealth > maxHealth) currentHealth = maxHealth;
-        UpdateHealthUI();
-    }
-
-    void UpdateHealthUI()
-    {
-        if (healthBarFill != null)
+        else
         {
-            healthBarFill.fillAmount = currentHealth / maxHealth;
+            // Önden veya arkadan gelen darbe (Şimdilik önden varsayalım)
+            zVal = 1f;
+        }
+
+        // Animator parametrelerini güncelle
+        if (animator != null)
+        {
+            animator.SetFloat("HitX", xVal);
+            animator.SetFloat("HitZ", zVal);
         }
     }
 
     void Die()
     {
-        if (isDead) return;
-        isDead = true;
-        
+        if (isDead) return; // Zaten öldüyse tekrar çalışmasın
+
         Debug.Log("OYUNCU ÖLDÜ!");
-        
-        // Ölünce hareketi tamamen kapat
-        if (_controller != null) _controller.enabled = false;
-        
-        // Ölüm animasyonu
-        if (_hitReactor != null)
+        isDead = true;
+
+        if (animator != null)
         {
-            _hitReactor.HandleDeath();
+            animator.SetTrigger("Die");
+        }
+
+        // Kılıcı düşür
+        KiliciDuser();
+
+        // 1. Ölüm Panelini Görünür Yap
+        if (deathPanel != null)
+        {
+            deathPanel.SetActive(true);
+        }
+
+        // 2. Mouse İmlecini Serbest Bırak (Yeniden Başlat butonuna tıklayabilmek için)
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        // İstersen burada oyuncu hareketini kilitleyen kodu da çağırabilirsin
+        // GetComponent<PlayerController>().enabled = false; gibi.
+    }
+
+    void KiliciDuser()
+    {
+        if (kilicRigidbody != null)
+        {
+            kilicRigidbody.transform.parent = null; // Kılıcı elden ayır
+            kilicRigidbody.isKinematic = false;     // Fizik motorunu aç
+            kilicRigidbody.useGravity = true;       // Yerçekimini aç
+
+            BoxCollider col = kilicRigidbody.GetComponent<BoxCollider>();
+            if (col != null) col.enabled = true;    // Collider'ı aç ki yere çarpsın
+
+            kilicRigidbody.AddTorque(Random.insideUnitSphere * 5f); // Havalı bir düşüş efekti
+        }
+    }
+
+    void UpdateHealthBar()
+    {
+        if (healthBarImage != null)
+        {
+            healthBarImage.fillAmount = currentHealth / maxHealth;
         }
     }
 }
