@@ -5,7 +5,14 @@ public class CameraController : MonoBehaviour
     public Transform target;
 
     public float mouseSensitivity = 2f;
-    public float distanceFromTarget = 4f;
+
+    // --- BURAYI DEĞİŞTİRDİK ---
+    // Karakterin dev olduğu için mesafeyi artırdık (Eskiden 4'tü)
+    public float distanceFromTarget = 20f;
+    // Karakterin boyu uzadığı için kameranın bakacağı yüksekliği ayarlanabilir yaptık
+    public float heightOffset = 10f;
+    // ---------------------------
+
     public Vector2 pitchMinMax = new Vector2(-40, 85);
 
     public float rotationSmoothTime = 0.12f;
@@ -15,45 +22,37 @@ public class CameraController : MonoBehaviour
     float yaw;
     float pitch;
 
-    // --- YENİ EKLENEN DEĞİŞKENLER ---
     [Header("Çarpışma Ayarları")]
-    public LayerMask collisionLayers; // Kameranın çarpacağı katmanlar (Default, Ground vb.)
-    public float cameraCollisionOffset = 0.2f; // Duvara yapışmasın diye minik boşluk
-                                               // -------------------------------
+    public LayerMask collisionLayers;
+    public float cameraCollisionOffset = 0.2f;
 
     void LateUpdate()
     {
         if (target == null) return;
 
-        // 1. FARE GİRDİSİ VE SINIRLAMA
+        // 1. FARE GİRDİSİ
         yaw += Input.GetAxis("Mouse X") * mouseSensitivity;
         pitch -= Input.GetAxis("Mouse Y") * mouseSensitivity;
         pitch = Mathf.Clamp(pitch, pitchMinMax.x, pitchMinMax.y);
 
-        // 2. YUMUŞAK DÖNÜŞ
+        // 2. YUMUŞAK DÖNÜŞ (Sadece Kamera Döner, Karakter Dönmez)
         Vector3 targetRotation = new Vector3(pitch, yaw);
         currentRotation = Vector3.SmoothDamp(currentRotation, targetRotation, ref rotationSmoothVelocity, rotationSmoothTime);
         transform.eulerAngles = currentRotation;
 
-        // --- 3. AKILLI ÇARPIŞMA (SPHERECAST) ---
+        // 3. POZİSYON HESAPLAMA
+        // Artık senin girdiğin 'heightOffset' kadar yukarı bakacak
+        Vector3 focusPosition = target.position + Vector3.up * heightOffset;
 
-        // Karakterin omuz hizası (Başlangıç noktası)
-        Vector3 focusPosition = target.position + Vector3.up * 1.5f;
         Vector3 cameraDirection = -transform.forward;
         float finalDistance = distanceFromTarget;
 
-        // KÜRE YARIÇAPI: Kameranın "kalınlığı". Merdivenlere takılmasını sağlar.
-        float sphereRadius = 0.2f;
-
+        // Çarpışma Kontrolü (SphereCast)
         RaycastHit hit;
-
-        // Raycast yerine SphereCast kullanıyoruz:
-        if (Physics.SphereCast(focusPosition, sphereRadius, cameraDirection, out hit, distanceFromTarget, collisionLayers))
+        // Dev karakter için küre çapını da biraz artırdık (0.2 -> 0.5)
+        if (Physics.SphereCast(focusPosition, 0.5f, cameraDirection, out hit, distanceFromTarget, collisionLayers))
         {
-            // Çarptığı yerden küre yarıçapı kadar öne gel ki içine girmesin
-            finalDistance = hit.distance - sphereRadius - cameraCollisionOffset;
-
-            // Kameranın karakterin içine girmesini engelle (Min mesafe)
+            finalDistance = hit.distance - 0.5f - cameraCollisionOffset;
             if (finalDistance < 0.2f) finalDistance = 0.2f;
         }
 
