@@ -13,8 +13,10 @@ public class BossAI : MonoBehaviour
     
     // --- Can ve Durum Ayarları ---
     public int maxHealth = 1000;
-    private int currentHealth;
+    
     public bool isDead = false;
+    private int currentHealth;
+    
     private Transform playerTarget;
     public BossState currentState = BossState.Idle;
     
@@ -228,13 +230,13 @@ public class BossAI : MonoBehaviour
     {
         if (isDead || currentState == BossState.Hurt) return; 
 
+        if (isDead) return;
+
         currentHealth -= damageAmount;
-        Debug.Log($"Boss hasar aldı. Kalan Can: {currentHealth}");
 
         if (currentHealth <= 0)
         {
             Die();
-            return;
         }
 
         StartCoroutine(HandleHurt());

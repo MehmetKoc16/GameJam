@@ -1,28 +1,29 @@
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections; // Coroutine için gerekli
 
 public class PlayerHealth : MonoBehaviour
 {
     [Header("Can Ayarları")]
     public float maxHealth = 100f;
     public float currentHealth;
-    public bool isDead = false; // Ölüm durumunu ekledik
+    public bool isDead = false;
 
     [Header("UI Bağlantısı")]
     public Image healthBarFill;
 
-    // HitReactor scriptine referans (Animasyonları bu yönetecek)
-    private HitReactor _hitReactor;
+    // --- YENİ EKLENEN REFERANSLAR ---
+    private HitReactor _hitReactor;      // Animasyon yönü için (Eski sistemin)
+    private PlayerController _controller; // Hareketi durdurmak için (Yeni sistem)
 
     void Start()
     {
-        // Aynı obje üzerindeki HitReactor scriptini bul
+        // Scriptleri otomatik bul
         _hitReactor = GetComponent<HitReactor>();
+        _controller = GetComponent<PlayerController>();
 
-        if (_hitReactor == null)
-        {
-            Debug.LogWarning("PlayerHealth: HitReactor scripti bu objede bulunamadı. Hasar tepkileri çalışmayacaktır.");
-        }
+        if (_hitReactor == null) Debug.LogWarning("HitReactor bulunamadı (Animasyon tepkisi olmayabilir).");
+        if (_controller == null) Debug.LogWarning("PlayerController bulunamadı (Karakter hasar alınca duraksamayabilir).");
 
         currentHealth = maxHealth;
         UpdateHealthUI();
@@ -30,31 +31,21 @@ public class PlayerHealth : MonoBehaviour
 
     void Update()
     {
-        // TEST: "H" tuşuna basınca kendine zarar ver
+        // TEST: "H" tuşu ile kendine hasar ver
         if (Input.GetKeyDown(KeyCode.H))
         {
-            // Simülasyon: Tam karşımızda duran biri vurmuş gibi yapalım.
             Vector3 fakeAttackerPos = transform.position + transform.forward * 2f; 
-
             TakeDamage(10f, fakeAttackerPos);
         }
     }
 
-    /// <summary>
-    /// Oyuncuya hasar verir ve tepki sistemini tetikler.
-    /// </summary>
-    /// <param name="damageAmount">Alınacak hasar miktarı.</param>
-    /// <param name="attackerPos">Saldıranın dünya pozisyonu (Tepki animasyonu için kullanılır).</param>
     public void TakeDamage(float damageAmount, Vector3 attackerPos)
     {
-        if (isDead) return; // Zaten ölmüşsek işlem yapma
+        if (isDead) return;
 
         currentHealth -= damageAmount;
-
-        // Can 0'ın altına düşmesin
         if (currentHealth < 0) currentHealth = 0;
 
-        // UI'ı güncelle
         UpdateHealthUI();
 
         if (currentHealth <= 0)
@@ -63,11 +54,34 @@ public class PlayerHealth : MonoBehaviour
             return;
         }
 
-        // --- Hasar Tepkisi ---
-        // Eğer ölmediysek ve HitReactor scripti varsa tepki ver
+        // --- HASAR TEPKİSİ VE STUN ---
+        
+        // 1. Eğer HitReactor varsa animasyonu ona oynat (Senin eski sistemin)
         if (_hitReactor != null)
         {
             _hitReactor.HandleHitReaction(attackerPos);
+        }
+
+        // 2. Eğer HitReactor yoksa veya hareket kontrolü ondaysa bile, 
+        // GARANTİ OLSUN DİYE buradan da kısa süreliğine hareketi kilitliyoruz.
+        if (_controller != null)
+        {
+            StopAllCoroutines(); // Üst üste hasar yerse süreyi sıfırla
+            StartCoroutine(StunPlayer(0.5f)); // 0.5 saniye don
+        }
+    }
+
+    // Karakteri kısa süre dondurup sonra tekrar açan fonksiyon
+    IEnumerator StunPlayer(float duration)
+    {
+        if (_controller != null) _controller.enabled = false; // Hareketi Kapat
+        
+        yield return new WaitForSeconds(duration); // Bekle
+        
+        // Eğer ölmediysek hareketi geri aç
+        if (!isDead && _controller != null)
+        {
+            _controller.enabled = true; // Hareketi Aç (DONMAYI ÇÖZEN KISIM)
         }
     }
 
@@ -95,12 +109,13 @@ public class PlayerHealth : MonoBehaviour
         
         Debug.Log("OYUNCU ÖLDÜ!");
         
-        // Ölüm durumunda hareketi durdur, ragdoll/animasyon tetikle
-        // Örn: if (GetComponent<PlayerController>() != null) GetComponent<PlayerController>().enabled = false;
+        // Ölünce hareketi tamamen kapat
+        if (_controller != null) _controller.enabled = false;
         
+        // Ölüm animasyonu
         if (_hitReactor != null)
         {
-            _hitReactor.HandleDeath(); // Ölüm animasyonunu HitReactor'a devret
+            _hitReactor.HandleDeath();
         }
     }
 }
