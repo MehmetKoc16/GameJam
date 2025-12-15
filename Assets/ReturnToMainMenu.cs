@@ -7,17 +7,12 @@ public class ReturnToMainMenu : MonoBehaviour
     public float beklemeSuresi = 5.0f;
     public string yuklenecekSahneAdi = "MainMenu";
 
-    // Start yerine OnEnable kullanýyoruz.
-    // Bu fonksiyon, obje her "SetActive(true)" yapýldýðýnda otomatik çalýþýr.
     void OnEnable()
     {
-        // Önceki sayaçlarý temizle (Garanti olsun)
         StopAllCoroutines();
-        // Yeni sayacý baþlat
         StartCoroutine(SahneYukle());
     }
 
-    // Eðer obje süre bitmeden kapanýrsa sayacý durdurmak için:
     void OnDisable()
     {
         StopAllCoroutines();
@@ -28,6 +23,14 @@ public class ReturnToMainMenu : MonoBehaviour
         Debug.Log($"Sayaç baþladý: {beklemeSuresi} saniye sonra {yuklenecekSahneAdi} yüklenecek.");
 
         yield return new WaitForSeconds(beklemeSuresi);
+
+        // --- DÜZELTME BURADA ---
+        // Mouse'u serbest býrak (Merkeze kilitli kalmasýn)
+        Cursor.lockState = CursorLockMode.None;
+
+        // Mouse imlecini görünür yap
+        Cursor.visible = true;
+        // -----------------------
 
         SceneManager.LoadScene(yuklenecekSahneAdi);
     }
