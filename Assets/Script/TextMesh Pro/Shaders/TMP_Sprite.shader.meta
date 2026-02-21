@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: ade87a1395a4eb4498e0d0d200191c4c
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 127325
+  packageName: Particle Pack
+  packageVersion: 3.1
+  assetPath: Assets/TextMesh Pro/Shaders/TMP_Sprite.shader
+  uploadId: 691001
